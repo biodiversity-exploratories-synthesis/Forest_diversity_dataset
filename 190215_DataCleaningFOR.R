@@ -1,5 +1,14 @@
+### Biodiversity exploratories - Synthesis dataset FORESTS ###
+### Author: Caterina Penone
+
 ####This script registers all the operations that were made on the downloaded datasets###
 
+## The dataset is then aggregated within the script 190215_DataAssemblingRawAbund.R
+## and prepared for Bexis upload in the script 190222_Upload_Bexis_FOR.R
+
+## Warning: This was my first script doing this kind of dataset operations so it's far 
+# from being perfect (and is a bit too "home-made"). I could re-write it but given the 
+# limited time I prefer to focus on updating the dataset with better scripts!
 
 
 #add?

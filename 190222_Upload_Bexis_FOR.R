@@ -1,4 +1,16 @@
-###Script to prepare the dataset for bexis upload (homogenise with grassland one)###
+### Biodiversity exploratories - Synthesis dataset FORESTS ###
+### Author: Caterina Penone
+
+### This script prepares the dataset for bexis upload (homogenise with grassland one) ###
+
+## It should be used after running the script 190215_DataCleaningFOR.R and 
+## 190215_DataAssemblingRawAbund.R
+
+## Warning: This was my first script doing this kind of dataset operations so it's far 
+# from being perfect (and is a bit too "home-made"). I could re-write it but given the 
+# limited time I prefer to focus on updating the dataset with better scripts!
+
+
 setwd("N:/")
 require(data.table)
 source("R/SCRIPTS UTILES/BE_plots_zero.R")

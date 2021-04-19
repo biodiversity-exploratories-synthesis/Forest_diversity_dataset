@@ -1,4 +1,18 @@
-#continue species table: add genus for bacteria,mycorrhiza,fungi.soil
+### Biodiversity exploratories - Synthesis dataset FORESTS ###
+### Author: Caterina Penone
+
+### This script assembles single datasets to create the forest dataset 
+### (raw data and species info) ###
+
+## It should be used after running the script 190215_DataCleaningFOR.R and 
+## is then followed by the script 190222_Upload_Bexis_FOR.R for bexis upload
+
+## Warning: This was my first script doing this kind of dataset operations so it's far 
+# from being perfect (and is a bit too "home-made"). I could re-write it but given the 
+# limited time I prefer to focus on updating the dataset with better scripts!
+
+
+#assemble and continue species table: add genus for bacteria,mycorrhiza,fungi.soil
 
 require(data.table)
 setwd("N:/")
