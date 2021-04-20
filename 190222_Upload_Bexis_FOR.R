@@ -70,7 +70,9 @@ spinfo[Group_broad=="fungi.root.soil",Fun_group_fine:="fungi.soil"]
 spinfo[is.na(Group_fine),Group_fine:=Group_broad]
 
 #in Fun_group_fine, replace NA with Fun_group_broad info
-spinfo[is.na(Fun_group_fine),Group_fine:=Fun_group_broad]
+spinfo[is.na(Fun_group_fine),Group_fine:=Fun_group_broad] #20/04/2021: this is a mistake!
+# it should have been spinfo[is.na(Fun_group_fine),Group_fine:=Fun_group_broad]
+# will be fixed in script 210217_ForestDivDataUPDATE.R
 
 setkey(spinfo,Species)
 setkey(PAdat,Species)
