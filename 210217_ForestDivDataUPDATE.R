@@ -1,34 +1,65 @@
-####UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version ??####
-#Changes from version with DataID: ?? to ??
-#Script by: Caterina Penone
+########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version ?? ##########
+# Changes from version with DataID: ?? to ??
+# Script by: Caterina Penone, University of Bern
+# March - May 2021
+############################################################################
 
-
+# This update applies the following changes:
 # 1. Homogeneise trophic level names as in grasslands dataset
 # 2. Check zeros and NAs issues
 # 3. Explore issue in Group_fine and Fun_group_fine (arthropods)
 # 4. Remove and add arthropods + add DataID (see point 4)
 # x. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
+# x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
+#    and 26473 (species table))
+# x. Add snails: dataset 24986
+# x. Add earthworms: dataset 21687
 
 # x. Update plant dataset (add more recent years: ID 30909)
-# x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),  and 
-# 26473 (species table))
 # x. Create a column with data versions
 
-# add nematodes from liliane ruess (not in Bexis)
+#x. Fix species names with multiple underscores or underscores at the end --> needed?
+
+# Protists --> probably same datasets as grasslands
+
+#bark beetles? --> check overlap with arthropods + discuss at synthesis meeting
+#20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
+#20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010
+
+# 21906: Pifall traps on forest EPs in 2008 subset Formicidae Species Abundances(https://www.bexis.uni-jena.de/Data/ShowXml.aspx?DatasetId=21906)
+#access asked 21/04 - Heike said ok but did not give acess in Bexis
+
+# nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
+# maybe search using species / column names
+
 # add AMF?
+
+# ask bexis how to look for new datasets
+
+
+### Add to metadata ###
+
+# Bacteria 2011, dataset 24868 HEW04 is missing and can not be recovered
+# https://www.bexis.uni-jena.de/ddm/data/Showdata/24868
+
+#soil fungi: mention that there is a probability column (we added all but species 
+# could be filtered by their probability: "unassigned"      "Probable"        "Highly Probable" "Possible" )
+
+#there is also data on earthworm biomass 21686 earthworm biomass
 
 # Note HEW02 was replaced by HEW51 in 2017 
 # 2008 -> 2016 HEW02 has data, then 2017 -> ... HEW51 #add a check on this
 # HEW13 was harvested
 
-# METADATA: # Bacteria 2011, dataset 24868 HEW04 is missing and can not be recovered --> add in metadata
-# https://www.bexis.uni-jena.de/ddm/data/Showdata/24868
 
-require(data.table)
-setwd("N:/")
+
+require(data.table) #to manage large datasets
+#setwd("N:/")
 setwd("C:/Users/Caterina/Dropbox/")
 
-source("R/SCRIPTS UTILES/BE_plots_zero.R")
+
+####
+source("R/SCRIPTS UTILES/BE_plots_zero.R") #will be added to synthesis functions in Git
 
 #Read last version of forest dataset
 frs <- fread("Exploratories/Data/FORESTS/190215_forestDiv.RAW_bexis.txt")
@@ -286,8 +317,8 @@ setnames(bac, c("Sequence_variant","Read_count","Plot_ID","kingdom"),
               c("Species","value","Plot_bexis","Group_fine"))
 
 # add columns and info on trophic level etc.
-bac$type<-"OTU_number"
-bac$Group_broad<-bac$Trophic_level<-bac$Fun_group_broad<-bac$Fun_group_fine<-"bacteria.RNA"
+bac$type <- "OTU_number"
+bac$Group_broad <- bac$Trophic_level <- bac$Fun_group_broad <- bac$Fun_group_fine <- "bacteria.RNA"
 
 # check if two OTUs have same "name" but different taxonomy
 temp<-unique(bac, by=c("Species","Group_fine"))
@@ -301,21 +332,165 @@ setdiff(names(frs2), names(bac))
 setdiff(names(bac), names(frs2))
 
 # rbind new data with main dataset
-frs2 <- rbindlist(list(frs2, bac, use.names=T))
+frs2 <- rbindlist(list(frs2, bac), use.names=T)
 rm(bac, b11, b14, b17); gc()
 
 ####################################################################################
 
 
 #x. Update soil fungi datasets #####################################################
-# Remove old datasets and replace by: 26467 (2011), 26469 (2014), 26469 (2017) and 
+# Remove old datasets and replace by: 26467 (2011), 26468 (2014), 26469 (2017) and 
 # 26473 (species table)
+
+unique(frs2$Group_broad)
+unique(frs2[Group_broad=="fungi.root.soil"]$DataID) #this was only soil (no roots)
+
+# read data
+f11<-fread("Exploratories/Data/FORESTS/Update2021/26467.txt")
+length(unique(f11$Plotid))*length(unique(f11$OTU)) #miss zeros too, but too large to add
+f14<-fread("Exploratories/Data/FORESTS/Update2021/26468.txt")
+f17<-fread("Exploratories/Data/FORESTS/Update2021/26469.txt")
+finfo<-fread("Exploratories/Data/FORESTS/Update2021/26473.txt")
+
+# add year and dataID
+f11$Year <- 2011; f11$DataID <- 26467
+f14$Year <- 2014; f14$DataID <- 26468
+f17$Year <- 2017; f17$DataID <- 26469
+
+# all years together
+soilf<-rbindlist(list(f11,f14,f17))
+rm(f11,f14,f17)
+
+# add plot names with zeros
+soilf<-data.table(BEplotZeros(soilf, "Plotid", plotnam = "Plot"))
+
+# rename columns
+setnames(soilf,c("Plotid","OTU","Abundance"),c("Plot_bexis","Species","value"))
+soilf$type<-"ASV_number"
+
+## prepare OTU information data
+finfo$Seq <- finfo$Kingdom<-NULL #remove unwanted info
+summary(as.factor(finfo$Guild))
+finfo <- finfo[OTU %in% unique(soilf$Species)] #remove grassland species
+# create Trophic_level column and simplify categories
+finfo$Trophic_level <- finfo$Guild
+finfo[Trophic_level %in% c("AMF","EMF","Lichen","EricoidM","OrchidM"),Trophic_level:="symbiont.soilfungi"]
+finfo[Trophic_level %in% c("Saprotroph"),Trophic_level:="decomposer.soilfungi"]
+finfo[Trophic_level %in% c("Pathogen","Parasite","Epiphyte"),Trophic_level:="pathotroph.soilfungi"]
+finfo[Trophic_level %in% c("unknown","Endophyte"),Trophic_level:="unknown.soilfungi"]
+summary(as.factor(finfo$Trophic_level))
+
+# create other columns and remove non-needed columns
+finfo$Fun_group_broad<-finfo$Trophic_level #Fun_group_broad
+setnames(finfo,"Guild","Fun_group_fine") #Fun_group_fine
+setnames(finfo,"Phylum","Group_fine") #Group_fine
+finfo$Group_broad<-"soilfungi" #Group_broad
+finfo[,c("Class","Order","Family","Genus","Species","Probability","TrophicMode"):=NULL]
+
+# Merge info and raw data
+soilf<-merge(soilf, finfo, by.x="Species", by.y="OTU")
+
+# add "soilf_" before otu number (to avoid confusion with bacteria or protists)
+set(soilf, j="Species", value=paste("soilf_", soilf$Species, sep=""))
+
+# Remove old fungi from main table and add new ones
+frs2 <- frs2[!Group_broad %in% c("fungi.root.soil")]
+
+frs2<-rbindlist(list(frs2, soilf), use.names=T)
+rm(soilf,finfo); gc()
 
 ####################################################################################
 
+#x. Add snail dataset ##############################################################
+snail <- fread("Exploratories/Data/FORESTS/Update2021/24986.txt")
+# select forests
+snail <- snail[Habitat=="FOR"]
+snail$Habitat <- snail$Exploratory <- NULL # not needed columns
+
+# check for missing plot X species combinations
+length(unique(snail$Plot))*length(unique(snail$Species))*5 #146 plots and 63 species (and 5 replicates per plot)
+# missing combinations are zeros or NAs? probably zeros
+length(unique(snail$Plot))*5 #655
+dim(unique(snail[,.(Plot,Subplot)])) #543, some combinations missing --> use the mean per plot
+sum(is.na(snail$Abundance))
+#Metadada states "On plots SEW8 and SEW24 no snail individuals have been found 
+#(and therefore are not included in the data table), all other plots that are missing 
+#have not been sampled for several reasons (e.g., grazing livestock).
+setdiff(unique(frs2$Plot_bexis), unique(snail$Plot))
+
+# add SEW8 and SEW24 that have 0 species
+plotstoadd <- CJ(Plot = c("SEW8", "SEW24"),
+                 Species = unique(snail$Species),
+                 Subplot = unique(snail$Subplot),
+                 Abundance = 0)
+snail <- rbindlist(list(snail,plotstoadd), use.names = T)
+
+# include missing combinations (zeros)
+snail <- setDT(snail)[CJ(Species=Species, Plot=Plot, Subplot=Subplot, unique=T), 
+                      on=.(Species, Plot,Subplot)]
+snail[is.na(Abundance), Abundance := 0 ]
+
+#Average per plot
+snail[,value:=mean(Abundance), by=list(Plot,Species)]
+snail$Abundance <- snail$Subplot <- NULL
+snail<-unique(snail) #9324
+
+# Add missing plots (=NAs)
+setdiff(unique(frs2$Plot_bexis), unique(snail$Plot))
+plotstoadd <- CJ(Plot = c("HEW2", "SEW12", "SEW44"),
+                 Species = unique(snail$Species),
+                 value = NA)
+
+snail <- rbindlist(list(snail,plotstoadd), use.names = T)
+
+# add columns to match main dataset
+snail$DataID<-24986; snail$type<-"abundance"; snail$Year<-2017
+setnames(snail,"Plot", "Plot_bexis") #rename Plot_bexis
+snail<-data.table(BEplotZeros(snail,"Plot_bexis",plotnam = "Plot")) # add Plot
+snail$Group_broad<-"Mollusca"; snail$Group_fine<-"Gastropoda" #Group_broad, Group_fine
+
+# add unserscore in species names
+snail$Species<-gsub(" ","_",snail$Species)
+
+# add information on Trophic_level,  Fun_group_broad, Fun_group_fine
+foods <- fread("Exploratories/Data/Traits/Snails_foodpreferences.csv")
+snail <- merge(snail,foods)
+snail$Fun_group_broad <- snail$Fun_group_fine <- snail$Trophic_level
+length(unique(snail$Species))*length(unique(snail$Plot))
+
+# add to main dataset
+frs2<-rbindlist(list(frs2,snail), use.names = T)
+rm(snail, foods, plotstoadd); gc()
+###################################################################################
 
 
+#x. Add earthworm dataset #########################################################
+# Read dataset 21687_Earthworm community 2011 all forest EPs_1.1.7
+ew <- fread("Exploratories/Data/FORESTS/Update2021/21687.txt")
+length(unique(ew$EP)) * length(unique(ew$Species)) #dimension is correct 150 plots and 18 species
 
+# add underscore in species names
+ew$Species<-gsub(" ","_",ew$Species)
+unique(ew$Species)
+
+# homogeneise and add columns to match main dataset
+names(frs2)
+ew$Explo <- NULL #remove explo column
+setnames(ew, names(ew), c("Plot_bexis", "Species", "value")) #rename columns
+ew <- data.table(BEplotZeros(ew,"Plot_bexis","Plot")) # add plot zero
+ew$type <- "abundance" #type
+ew$DataID <- "21687" #DataID
+ew$Year <- 2011 #year
+ew$Group_broad <- "earthworm" #Group_broad
+ew$Group_fine <- "Lumbricidae" #Group_fine
+ew$Trophic_level <- "decomposer.earthworm" #Trophic_level
+ew$Fun_group_broad <- ew$Fun_group_fine <- "decomposer" #Fun_group_broad and Fun_group_fine
+
+# add to main dataset
+frs2<-rbindlist(list(frs2,ew), use.names = T)
+rm(ew); gc()
+
+####################################################################################
 
 
 
@@ -389,8 +564,8 @@ setnames(plants, names(plants), c("Plot_bexis", "Plot", "Year", "Layer","Species
 ####################################################################################
 
 
-
-
+#x. Example header #################################################################
+####################################################################################
 
 
 
@@ -419,15 +594,17 @@ frs2[DataID==16868, Dataversion:="1.1.3"]; frs2[DataID==16869, Dataversion:="1.1
 frs2[DataID==16886, Dataversion:="1.1.2"]; frs2[DataID==16887, Dataversion:="1.1.2"]
 frs2[DataID==16906, Dataversion:="1.1.1"]; frs2[DataID==17186, Dataversion:="2.1.0"]
 frs2[DataID==18547, Dataversion:="1.1.0"]; 
-
-frs2[DataID==24690, Dataversion:="???"] #bird dataset - look for zipfile in O?
+ 
+frs2[DataID==24690, Dataversion:="4.1.2"] #bird dataset
 frs2[DataID==24868, Dataversion:="2"]; frs2[DataID==25067, Dataversion:="2"] #bacteria
-frs2[DataID==26569, Dataversion:="2"]; frs2[DataID==, Dataversion:=""]
+frs2[DataID==26569, Dataversion:="2"];
+frs2[DataID==24986, Dataversion:="1.3.9"] #snails
 
 #continue here:
 frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #will be added
+#21687_Earthworm community 2011 all forest EPs_1.1.7
 #26467_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2011; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
 #26468_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2014; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
 #26469_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.1
