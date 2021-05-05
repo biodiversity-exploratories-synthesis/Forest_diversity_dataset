@@ -14,6 +14,7 @@
 #    and 26473 (species table))
 # x. Add snails: dataset 24986
 # x. Add earthworms: dataset 21687
+# x. Add ants: dataset 21906
 
 # x. Update plant dataset (add more recent years: ID 30909)
 # x. Create a column with data versions
@@ -25,9 +26,9 @@
 #bark beetles? --> check overlap with arthropods + discuss at synthesis meeting
 #20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
 #20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010
-
-# 21906: Pifall traps on forest EPs in 2008 subset Formicidae Species Abundances(https://www.bexis.uni-jena.de/Data/ShowXml.aspx?DatasetId=21906)
-#access asked 21/04 - Heike said ok but did not give acess in Bexis
+#this is in the dfunctions dataset
+#20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
+#--> check overlap but in principle remove
 
 # nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
 # maybe search using species / column names
@@ -50,6 +51,8 @@
 # Note HEW02 was replaced by HEW51 in 2017 
 # 2008 -> 2016 HEW02 has data, then 2017 -> ... HEW51 #add a check on this
 # HEW13 was harvested
+
+#ants dataset 21906: ants were sampled monthly, samples are aggregated
 
 
 
@@ -564,6 +567,64 @@ setnames(plants, names(plants), c("Plot_bexis", "Plot", "Year", "Layer","Species
 ####################################################################################
 
 
+#x. Add ants dataset 21906 #########################################################
+ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
+
+# Explore data
+unique(ant$Traptype)
+unique(ant$CollectionYear) #2008
+ant[is.na(Species)] #some all NAs with abundance = NA --> remove
+ant[is.na(Abundance)] #none
+length(unique(ant$Plot_ID)) * #150 plots
+ length(unique(ant$CollectionMonth))* #7 months
+  length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
+   length(unique(ant$Species)) #30 species
+
+# Big issue: the number of sampling months per plot varies between 1 and 5
+# the number of trap locations per plot varies between 1 and 3
+# --> not possible to sum, average would be unfair, only way is to select months and loose plots
+
+
+# TODO transform "Oct2010" into "Oct" ##TODO
+
+# Remove NAs previously detected
+ant <- na.omit(ant)
+
+# Aggregate information across the whole sampling period (monthly sampling)
+ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
+
+plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
+  ant <- ant[,.(Plot_ID, Species, Abundance)] #only target columns
+
+ant$Species<-gsub(" ","_",ant$Species)
+ant$DataID<-23986
+ant$Dataversion<-"2.1.6"
+ant$Year<-"2014_2015"
+ant<-data.table(BEplotNonZeros(ant,"Plot",plotnam = "Plot_bexis"))
+setnames(ant,"Presence_absence","value")
+ant$type<-"presenceabsence"
+ant$Trophic_level<-ant$Fun_group_broad<-ant$Fun_group_fine<-"omnivore.ant"
+ant$Group_broad<-ant$Group_fine<-"Formicidae"
+#ant[, c("Group_fine", "sp") := tstrsplit(Species, "_", fixed=TRUE)]
+#ant$sp<-NULL
+length(unique(ant$Species))*length(unique(ant$Plot)) #31 species and 110 plots..
+
+#overlap with existing species?
+intersect(unique(ant$Species),unique(grl2$Species)) #11 overlapping species!
+
+#remove from ant dataset (because pollinator dataset is more complete)
+ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
+
+grl2<-rbind(grl2,ant)
+rm(ant); gc()
+
+
+####################################################################################
+
+
+
+
+
 #x. Example header #################################################################
 ####################################################################################
 
@@ -599,6 +660,7 @@ frs2[DataID==24690, Dataversion:="4.1.2"] #bird dataset
 frs2[DataID==24868, Dataversion:="2"]; frs2[DataID==25067, Dataversion:="2"] #bacteria
 frs2[DataID==26569, Dataversion:="2"];
 frs2[DataID==24986, Dataversion:="1.3.9"] #snails
+frs2[DataID==21906, Dataversion:="2"] #ants
 
 #continue here:
 frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
