@@ -12,6 +12,7 @@
 # x. Remove and add arthropods + add DataID (see point 4)
 #TODO x. Add HEW51 for all species and years
 # x. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
+#TODO --> fix HEW2 HEW51 (wait for JOhannes' answer)
 # x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
 #    and 26473 (species table))
 # x. Add snails: dataset 24986
@@ -20,36 +21,38 @@
 # x. Add HEW51 for all species (NAs)
 #TODO add HEW2 to all new datasets?
 
-# x. Add ants: dataset 21906
-# x. Update plant dataset (add more recent years: ID 30909)
-# x. Create a column with data versions
+#TODO x. Update plant dataset (add more recent years: ID 30909) --> wait for Ralph's answer
+#TODO x. Add ants: dataset 21906 --> wait for Heike's answer
+#TODO x. Add protists Cercozoa and  --> #TODO Oomycota
 
-#x. Fix species names with multiple underscores or underscores at the end --> needed?
 
-# Protists --> probably same datasets as grasslands
+#TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
 
-#bark beetles? --> check overlap with arthropods + discuss at synthesis meeting
+
+#TODO x. Create a column with data versions --> at the end
+
+#TODO bark beetles? --> check overlap with arthropods + discuss at synthesis meeting
 #20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
 #20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010
 #this is in the dfunctions dataset
 #20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
 #--> check overlap but in principle remove
 
-# nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
+#TODO nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
 # maybe search using species / column names
 
-# add AMF?
+#TODO add AMF?
 
 # TODO ask bexis how to look for new datasets
 #TODO bacteria --> why HEW02 has data? no data for HEW51?
 
-#fungi deadwood they come from two datasets --> do something to differentiate?
+#TODO fungi deadwood they come from two datasets --> do something to differentiate?
 #micromammals 126 plots --> need to add NAs
 # lichens and mosses add mixed year so no mistakes done on year (or add to metadata)
 
 
 
-
+#TODO
 ### Add to metadata ###
 
 # Bacteria 2011, dataset 24868 HEW04 is missing and can not be recovered
@@ -650,14 +653,7 @@ sort(unique(bird$Species))
 
 
 
-
-
-
-
-
-
-
-#x. Update plant dataset ###########################################################
+#x. Update plant dataset 30909######################################################
 # Remove old plant dataset and replace by new one: ID 30909
 plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_3_data.txt")
 
@@ -721,22 +717,25 @@ ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
 # Explore data
 unique(ant$Traptype)
 unique(ant$CollectionYear) #2008
-ant[is.na(Species)] #some all NAs with abundance = NA --> remove
+ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
 ant[is.na(Abundance)] #none
 length(unique(ant$Plot_ID)) * #150 plots
- length(unique(ant$CollectionMonth))* #7 months
+ length(unique(ant$CollectionMonth))* #5 months
   length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
    length(unique(ant$Species)) #30 species
 
-# Big issue: the number of sampling months per plot varies between 1 and 5
+# Issue: the number of sampling months per plot varies between 1 and 5
 # the number of trap locations per plot varies between 1 and 3
 # --> not possible to sum, average would be unfair, only way is to select months and loose plots
+# also select randomly 2 traps as in Grevé et al 2018, Ecosphere
+
+ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
 
 
 # TODO transform "Oct2010" into "Oct" ##TODO
 
-# Remove NAs previously detected
-ant <- na.omit(ant)
+# Restrict to months with more plots visited
+
 
 # Aggregate information across the whole sampling period (monthly sampling)
 ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
@@ -773,7 +772,104 @@ rm(ant); gc()
 
 
 
-#x. Example header #################################################################
+#x. Add protists 2011 and 2017#####################################################
+
+# Read diversity data and check dimension
+pro17 <- fread("Exploratories/Data/FORESTS/Update2021/24466.txt")
+length(unique(pro17$variable)) * length(unique(pro17$EP_PlotID)) #every row is repeated twice!
+pro17 <- unique(pro17)
+pro11 <- fread("Exploratories/Data/FORESTS/Update2021/24426.txt")
+length(unique(pro11$OTUs)) * length(unique(pro11$EP_PlotID))
+pro11 <- unique(pro11)
+
+# Read species information / traits
+proinf17 <- fread("Exploratories/Data/FORESTS/Update2021/24468.txt")
+proinf11 <- fread("Exploratories/Data/FORESTS/Update2021/24467.txt")
+proinf11 <-unique(proinf11)
+
+# Remove columns not needed, add year and DataID
+pro17$MyPlotID <- NULL; pro11$MyPlotID <- NULL
+pro17$DataID <- 24466; pro11$DataID <- 24426
+pro17$Year <- 2017; pro11$Year <- 2011
+setnames(pro17,"variable","OTUs")
+
+#use OTUs or species? look at correlation
+# pro11s<-merge(pro11,proinf11,by="OTUs")
+# pro11s[raw_abund!=0,raw_abund:=1]
+# pro11s[,otuRich:=sum(raw_abund),by=EP_PlotID]
+# pro11s[,spRich:=sum(raw_abund),by=list(Species,EP_PlotID)]
+# 
+# rich<-unique(pro11s[,.(EP_PlotID,otuRich,spRich)])
+# rich<-unique(rich,by="EP_PlotID")
+# plot(rich$otuRich,rich$spRich)
+# cor.test(rich$otuRich,rich$spRich) #0.86 correlated, just keep OTUs in the table (so people can do rarefaction)
+# rm(pro11s,rich)
+
+setnames(pro11,"raw_abund","value"); setnames(pro17,"raw_abund","value")
+
+# Merge species information
+pro11 <- merge(pro11,proinf11,by="OTUs")
+pro17 <- merge(pro17,proinf17,by="OTUs")
+
+# Add group name to otu ID (to avoid confusions with fungi or bacteria)
+pro11[,OTUs:=paste(OTUs,"_protist",sep="")] #2011 and 2017 are compatible, use same OTUID
+pro17[,OTUs:=paste(OTUs,"_protist",sep="")] #2011 and 2017 are compatible, use same OTUID
+
+# 2011 and 2017 together
+prot <- rbind(pro11,pro17)
+rm(pro11,pro17,proinf11,proinf17)
+
+# Select only focus columns
+prot<-prot[,.(OTUs,EP_PlotID,value,DataID,Year,
+              Phylum,Class,nutrition_bacterivore, nutrition_omnivore, nutrition_eukaryvore, nutrition_plant_parasite,
+              nutrition_parasite_not_plant, nutrition_unknown)]
+
+# Add trophic level
+prot$Trophic_level <- "protist.unknown" #had to put unknown instead of NA otherwise lines below do not work
+## are there species with multiple nutrition?
+prot[rowSums(prot[,8:13,with=F])>1]
+prot[rowSums(prot[,8:13,with=F])==0]
+dim(prot[rowSums(prot[,8:13,with=F])==1])
+
+prot[nutrition_bacterivore==1,Trophic_level:="bacterivore.protist"]
+prot[nutrition_omnivore==1,Trophic_level:="omnivore.protist"]
+prot[nutrition_eukaryvore==1,Trophic_level:="eukaryvore.protist"]
+prot[nutrition_plant_parasite==1,Trophic_level:="plantparasite.protist"]
+prot[nutrition_parasite_not_plant==1,Trophic_level:="nonplantparasite.protist"]
+nrow(prot[Trophic_level=="unknown.protist"])
+sum(prot$nutrition_unknown)
+# remove nutrition columns
+prot[,(8:13):=NULL]
+
+# Add "Group_broad"     "Group_fine"      "Fun_group_broad" "Fun_group_fine" 
+unique(frs2$Group_broad)
+prot$Group_broad <- "Protists"
+unique(frs2$Group_fine)
+
+setnames(prot,"Phylum","Group_fine")
+unique(frs2$Fun_group_broad); unique(frs2$Fun_group_fine)
+prot$Fun_group_broad<-prot$Fun_group_fine<-prot$Trophic_level
+prot$Class <- NULL
+prot$type <- "OTU_number"
+setnames(prot,"OTUs","Species")
+
+
+# Add Plot
+prot<-data.table(BEplotZeros(prot,"EP_PlotID",plotnam="Plot"))
+setnames(prot,"EP_PlotID","Plot_bexis")
+
+
+#############OOMYCETES
+
+
+
+
+
+
+#Merge with main dataset
+frs2 <- frs2[!Group_broad=="Protists"]
+frs2 <- rbindlist(list(frs2,prot),use.names = T)
+rm(prot,prot1)
 ####################################################################################
 
 
