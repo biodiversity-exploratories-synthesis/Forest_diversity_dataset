@@ -774,6 +774,7 @@ rm(ant); gc()
 
 #x. Add protists 2011 and 2017#####################################################
 
+############CERCOZOA
 # Read diversity data and check dimension
 pro17 <- fread("Exploratories/Data/FORESTS/Update2021/24466.txt")
 length(unique(pro17$variable)) * length(unique(pro17$EP_PlotID)) #every row is repeated twice!
@@ -812,8 +813,8 @@ pro11 <- merge(pro11,proinf11,by="OTUs")
 pro17 <- merge(pro17,proinf17,by="OTUs")
 
 # Add group name to otu ID (to avoid confusions with fungi or bacteria)
-pro11[,OTUs:=paste(OTUs,"_protist",sep="")] #2011 and 2017 are compatible, use same OTUID
-pro17[,OTUs:=paste(OTUs,"_protist",sep="")] #2011 and 2017 are compatible, use same OTUID
+pro11[,OTUs:=paste(OTUs,"_protist_CERCOZOA",sep="")] #2011 and 2017 are compatible, use same OTUID
+pro17[,OTUs:=paste(OTUs,"_protist_CERCOZOA",sep="")] #2011 and 2017 are compatible, use same OTUID
 
 # 2011 and 2017 together
 prot <- rbind(pro11,pro17)
@@ -859,8 +860,72 @@ prot<-data.table(BEplotZeros(prot,"EP_PlotID",plotnam="Plot"))
 setnames(prot,"EP_PlotID","Plot_bexis")
 
 
-#############OOMYCETES
+#############OOMYCOTA
+# Read diversity data and check dimension
+pro17 <- fread("Exploratories/Data/FORESTS/Update2021/25767_2_data.txt")
+length(unique(pro17$OTU)) * length(unique(pro17$EP_PlotID))
 
+pro11 <- fread("Exploratories/Data/FORESTS/Update2021/25766_2_data.txt")
+length(unique(pro11$OTU)) * length(unique(pro11$EP_PlotID))
+
+# Read species information / traits
+proinf <- fread("Exploratories/Data/FORESTS/Update2021/25768_2_data.txt")
+
+# Add year, DataID and merge
+pro17$My_PlotID <- NULL; pro11$MyPlotID <- NULL
+pro17$DataID <- 25767; pro11$DataID <- 25766
+pro17$Year <- 2017; pro11$Year <- 2011
+
+protoo <- rbindlist((list(pro11,pro17)))
+rm(pro11, pro17)
+
+
+#### Prepare species info table
+# Add Group broad and Group fine
+proinf$Group_broad <- "Protists_oomycota"
+unique(proinf$Order)
+setnames(proinf, "Order", "Group_fine")
+
+# Create trophic level information
+table(proinf[,.(Lifestyle, Substrate)])
+proinf$Trophic_level <- "plantparasite.protist"
+proinf[Lifestyle=="saprotroph", Trophic_level:="decomposer.protist"]
+proinf[(!Lifestyle %in% "saprotroph" & Substrate == "Metazoa"),
+       Trophic_level:="animalparasite.protist"]
+proinf[(!Lifestyle %in% "saprotroph" & Substrate == "substrate_undetermined"),
+       Trophic_level:="unknown.protist"]
+
+table(proinf[,.(Lifestyle, Trophic_level)]) #check
+table(proinf[,.(Substrate, Trophic_level)]) #check
+
+# Functional group broad and fine
+proinf$Fun_group_broad <- proinf$Fun_group_fine <- proinf$Trophic_level
+proinf[(!Lifestyle %in% "obligate_biotroph" & Substrate == "Plantae"),
+       Fun_group_fine:="plant.obligate.biotroph.protist"]
+
+proinf[(!Lifestyle %in% "hemibiotroph" & Substrate == "Plantae"),
+       Fun_group_fine:="plant.hemibiotroph.protist"]
+
+##################continue here and do all categories ## also for the rare ones? (e.g. obligate biotroph metazoa=8?)
+############ probably yes so people can filter them out --> give info in metadata
+proinf[(!Lifestyle %in% "hemibiotroph" & Substrate == "Plantae"),
+       Fun_group_fine:="plant.hemibiotroph.protist"]
+
+# Remove columns not needed
+
+## Change names?
+setnames(proinf, names(proinf), "Species", )
+
+
+
+
+setnames(prot,"Phylum","Group_fine")
+
+# Merge diversity and species info
+protoo <- merge(protoo, proinf, by.x = "OTU", by.y = "OTUs")
+
+# Add group name to otu ID (to avoid confusions with fungi or bacteria)
+protoo[,OTU:=paste(OTU,"_protist_OOMYCOTA",sep="")]
 
 
 
@@ -868,7 +933,7 @@ setnames(prot,"EP_PlotID","Plot_bexis")
 
 #Merge with main dataset
 frs2 <- frs2[!Group_broad=="Protists"]
-frs2 <- rbindlist(list(frs2,prot),use.names = T)
+frs2 <- rbindlist(list(frs2, prot, protoo),use.names = T)
 rm(prot,prot1)
 ####################################################################################
 
