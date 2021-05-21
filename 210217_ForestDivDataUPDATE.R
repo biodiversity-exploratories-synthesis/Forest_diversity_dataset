@@ -50,6 +50,8 @@
 #micromammals 126 plots --> need to add NAs
 # lichens and mosses add mixed year so no mistakes done on year (or add to metadata)
 
+#TODO in GRASSLAND DATASET:
+# add oomycota and change protist_oomycota, cercozoa (also in OTU name)
 
 
 #TODO
@@ -71,6 +73,10 @@
 
 #lichens dataset --> ok, data come from 2 different years
 #mosses dataset --> ok, data come from 2 different years
+#protists some groups have few OTUS
+# cercozoa: mainly bacterivores (omnivores and eukarivores could be rmemoved)
+# oomicota: mainly plant parasites (more reliable information), hemibiotroph are alternate parasites 
+# and saprotrophs (less specialised): this info is in fun_group_fine
 
 require(data.table) #to manage large datasets
 #setwd("N:/")
@@ -783,13 +789,46 @@ pro11 <- fread("Exploratories/Data/FORESTS/Update2021/24426.txt")
 length(unique(pro11$OTUs)) * length(unique(pro11$EP_PlotID))
 pro11 <- unique(pro11)
 
+# Remove columns not needed
+pro17$MyPlotID <- NULL; pro11$MyPlotID <- NULL
+
+# Remove grassland plots
+length(unique(pro17$EP_PlotID))
+pro17 <- pro17[!grepl("G", pro17$EP_PlotID)] #148 -> add NAs for missing plots HEW7, SEW18 (no amplification)
+
+length(unique(pro11$EP_PlotID))
+pro11 <- pro11[!grepl("G", pro11$EP_PlotID)] #144 -> add NAs for missing plots SEW31, SEW33, HEW7, HEW21, HEW23, HEW33 (no amplification)
+
+# Add NAs for missing plots 2017
+setdiff(unique(frs2$Plot_bexis), unique(pro17$EP_PlotID)) #HEW7, SEW18
+toadd <- data.table(EP_PlotID = c("HEW7", "SEW18"), 
+                    variable = rep(unique(pro17$variable),2),
+                    raw_abund = NA)
+length(unique(pro17$variable)) * 2
+
+pro17 <- rbindlist(list(pro17,toadd))
+rm(toadd)
+
+# Add NAs for missing plots 2011
+setdiff(unique(frs2$Plot_bexis), unique(pro11$EP_PlotID)) #"HEW7"  "HEW21" "HEW23" "HEW33" "SEW31" "SEW33"
+toadd <- data.table(EP_PlotID = c("HEW7",  "HEW21", "HEW23", "HEW33", "SEW31", "SEW33"), 
+                    OTUs = rep(unique(pro11$OTUs),6),
+                    raw_abund = NA)
+length(unique(pro11$OTUs)) * 6
+
+pro11 <- rbindlist(list(pro11,toadd))
+rm(toadd)
+
+# Check species names matching
+setdiff(unique(pro11$OTUs),unique(pro17$variable)) #perfect
+setdiff(unique(pro17$variable),unique(pro11$OTUs)) #perfect
+
 # Read species information / traits
 proinf17 <- fread("Exploratories/Data/FORESTS/Update2021/24468.txt")
 proinf11 <- fread("Exploratories/Data/FORESTS/Update2021/24467.txt")
 proinf11 <-unique(proinf11)
 
-# Remove columns not needed, add year and DataID
-pro17$MyPlotID <- NULL; pro11$MyPlotID <- NULL
+# Add year and DataID
 pro17$DataID <- 24466; pro11$DataID <- 24426
 pro17$Year <- 2017; pro11$Year <- 2011
 setnames(pro17,"variable","OTUs")
@@ -826,7 +865,7 @@ prot<-prot[,.(OTUs,EP_PlotID,value,DataID,Year,
               nutrition_parasite_not_plant, nutrition_unknown)]
 
 # Add trophic level
-prot$Trophic_level <- "protist.unknown" #had to put unknown instead of NA otherwise lines below do not work
+prot$Trophic_level <- "protist.unknown"
 ## are there species with multiple nutrition?
 prot[rowSums(prot[,8:13,with=F])>1]
 prot[rowSums(prot[,8:13,with=F])==0]
@@ -879,6 +918,9 @@ pro17$Year <- 2017; pro11$Year <- 2011
 protoo <- rbindlist((list(pro11,pro17)))
 rm(pro11, pro17)
 
+# Remove grassland plots
+length(unique(protoo$EP_PlotID))
+protoo <- protoo[!grepl("G", protoo$EP_PlotID)] #149 -> add NAs for missing plot
 
 #### Prepare species info table
 # Add Group broad and Group fine
@@ -895,46 +937,63 @@ proinf[(!Lifestyle %in% "saprotroph" & Substrate == "Metazoa"),
 proinf[(!Lifestyle %in% "saprotroph" & Substrate == "substrate_undetermined"),
        Trophic_level:="unknown.protist"]
 
-table(proinf[,.(Lifestyle, Trophic_level)]) #check
-table(proinf[,.(Substrate, Trophic_level)]) #check
+table(proinf[,.(Lifestyle, Trophic_level)]) #check ok
+table(proinf[,.(Substrate, Trophic_level)]) #check ok
 
 # Functional group broad and fine
 proinf$Fun_group_broad <- proinf$Fun_group_fine <- proinf$Trophic_level
-proinf[(!Lifestyle %in% "obligate_biotroph" & Substrate == "Plantae"),
+proinf[(Lifestyle == "obligate_biotroph" & Trophic_level == "plantparasite.protist"),
        Fun_group_fine:="plant.obligate.biotroph.protist"]
 
-proinf[(!Lifestyle %in% "hemibiotroph" & Substrate == "Plantae"),
+proinf[(Lifestyle == "hemibiotroph" & Trophic_level == "plantparasite.protist"),
        Fun_group_fine:="plant.hemibiotroph.protist"]
 
-##################continue here and do all categories ## also for the rare ones? (e.g. obligate biotroph metazoa=8?)
-############ probably yes so people can filter them out --> give info in metadata
-proinf[(!Lifestyle %in% "hemibiotroph" & Substrate == "Plantae"),
-       Fun_group_fine:="plant.hemibiotroph.protist"]
+proinf[(Lifestyle == "obligate_biotroph" & Trophic_level == "animalparasite.protist"),
+       Fun_group_fine:="animal.obligate.biotroph.protist"]
+
+proinf[(Lifestyle == "hemibiotroph" & Trophic_level == "animalparasite.protist"),
+       Fun_group_fine:="animal.hemibiotroph.protist"]
+
+proinf[(Trophic_level == "decomposer.protist"),
+       Fun_group_fine:="saprotroph.protist"]
+
+table(proinf[,.(Fun_group_fine, Trophic_level)]) #check ok
 
 # Remove columns not needed
+proinf$Genus <- proinf$Lifestyle <- proinf$Substrate <- NULL
 
-## Change names?
-setnames(proinf, names(proinf), "Species", )
-
-
-
-
-setnames(prot,"Phylum","Group_fine")
+## Change names
+setnames(proinf, "OTUs", "Species")
+setnames(protoo, c("EP_PlotID", "OTU", "abundance"), c("Plot_bexis", "Species", "value"))
 
 # Merge diversity and species info
-protoo <- merge(protoo, proinf, by.x = "OTU", by.y = "OTUs")
+protoo <- merge(protoo, proinf, by = "Species")
 
 # Add group name to otu ID (to avoid confusions with fungi or bacteria)
-protoo[,OTU:=paste(OTU,"_protist_OOMYCOTA",sep="")]
+protoo[,Species:=paste(Species,"_protist_OOMYCOTA",sep="")]
 
+# Add new columns: type, plot zero
+setdiff(names(frs2), names(protoo))
+setdiff(names(protoo), names(frs2))
+protoo$type <- "OTU_number"
+protoo <- data.table(BEplotZeros(protoo, "Plot_bexis", plotnam = "Plot"))
 
+# Checks
+apply(prot, 2, function(x)sum(is.na(x)))
+apply(protoo, 2, function(x)sum(is.na(x)))
 
+length(unique(prot$Plot)) #150
+length(unique(protoo$Plot)) #150
 
+length(unique(prot$Species)) #2101
+length(unique(protoo$Species)) #1148
 
-#Merge with main dataset
-frs2 <- frs2[!Group_broad=="Protists"]
+150 * 2101 * 2 #630300
+150 * 1148 * 2 #344400
+
+# Checks passed, merge with main dataset
 frs2 <- rbindlist(list(frs2, prot, protoo),use.names = T)
-rm(prot,prot1)
+rm(prot, protoo, proinf); gc()
 ####################################################################################
 
 
