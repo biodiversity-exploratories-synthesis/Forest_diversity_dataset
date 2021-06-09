@@ -1,7 +1,7 @@
 ########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version ?? ##########
 # Changes from version with DataID: ?? to ??
 # Script by: Caterina Penone, University of Bern
-# March - May 2021
+# March - June 2021
 ############################################################################
 
 # This update applies the following changes:
@@ -10,7 +10,7 @@
 # x. Check zeros and NAs issues
 # x. Explore issue in Group_fine and Fun_group_fine (arthropods)
 # x. Remove and add arthropods + add DataID (see point 4)
-#TODO x. Add HEW51 for all species and years
+#TODO x. Add HEW51 for all species and years NAs (here or at the end?)
 # x. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
 #TODO --> fix HEW2 HEW51 (wait for JOhannes' answer)
 # x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
@@ -18,38 +18,18 @@
 # x. Add snails: dataset 24986
 # x. Add earthworms: dataset 21687
 # x. Add birds 2018: dataset 25306 ----------> to finish (homogenise HEW2 and HEW51)
-#TODO x. Add protists Cercozoa and  --> #TODO Oomycota
-#TODO? x. Add HEW51 for all species (NAs)
-#TODO add HEW2 to all new datasets?
-
-
-#TODO x. Update plant dataset (add more recent years: ID 30909) --> wait for Ralph's answer
-#TODO x. Add ants: dataset 21906 --> wait for Heike's answer
-
-
-
-#TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
-
-
+# x. Add protists Cercozoa and Oomycota
+# x. Update plant dataset (add more recent years: ID 30909)
+#TODO add HEW2 NAs to all new datasets (later than 2017)
 #TODO x. Create a column with data versions --> at the end
 
-#TODO bark beetles? --> check overlap with arthropods + discuss at synthesis meeting
-#20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
-#20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010
-#this is in the dfunctions dataset
-#20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
-#--> check overlap but in principle remove
-#24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
-#--> too specific, add the info in metadata
-
+#TODO x. # Moth abundance from lighttrapping on all grassland and forest plots (26026)
+#TODO x. Add ants: dataset 21906 --> wait for Heike's answer
+#TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
 #TODO nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
 # maybe search using species / column names
-
 #TODO add AMF?
-
-# TODO ask bexis how to look for new datasets
 #TODO bacteria --> why HEW02 has data? no data for HEW51?
-
 #TODO fungi deadwood they come from two datasets --> do something to differentiate?
 #micromammals 126 plots --> need to add NAs
 # lichens and mosses add mixed year so no mistakes done on year (or add to metadata)
@@ -57,9 +37,10 @@
 #TODO in GRASSLAND DATASET:
 # add oomycota and change protist_oomycota, cercozoa (also in OTU name)
 
-
 #TODO
 ### Add to metadata ###
+
+# Add moth dataset (26026) --> two repetitions aggregated and if one missing -> NA
 
 # Bacteria 2011, dataset 24868 HEW04 is missing and can not be recovered
 # https://www.bexis.uni-jena.de/ddm/data/Showdata/24868
@@ -75,12 +56,22 @@
 
 #ants dataset 21906: ants were sampled monthly, samples are aggregated
 
+
+
 #lichens dataset --> ok, data come from 2 different years
 #mosses dataset --> ok, data come from 2 different years
 #protists some groups have few OTUS
 # cercozoa: mainly bacterivores (omnivores and eukarivores could be rmemoved)
 # oomicota: mainly plant parasites (more reliable information), hemibiotroph are alternate parasites 
 # and saprotrophs (less specialised): this info is in fun_group_fine
+
+# these datasets are not in but they exists: 
+#20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
+#20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010 # this is in the dfunctions dataset
+#20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
+#24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
+#22066: The soil macrofauna orderlevel from all forest EPs sampled in spring 2011
+#21686: The earthworm biomass of all forest EPs from spring 2011
 
 require(data.table) #to manage large datasets
 #setwd("N:/")
@@ -648,19 +639,7 @@ sort(unique(bird$Species))
 
 
 #rm(allbirdtr,birdtr,bird,newsp,birdc,allpl,checkbi,newbioldy,oldbi,yearver,newbi); gc()
-
-
-
-
 ####################################################################################
-
-
-
-
-#x. Example header #################################################################
-####################################################################################
-
-
 
 
 #x. Update plant dataset 30909######################################################
@@ -739,77 +718,6 @@ frs2 <- rbindlist(list(frs2, plantagg), use.names = T)
 rm(plantagg, plants, newpl, allcomb); gc()
 
 ####################################################################################
-
-
-#x. Add ants dataset 21906 #########################################################
-ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
-
-# Explore data
-unique(ant$Traptype)
-unique(ant$CollectionYear) #2008
-ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
-ant[is.na(Abundance)] #none
-length(unique(ant$Plot_ID)) * #150 plots
- length(unique(ant$CollectionMonth))* #5 months
-  length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
-   length(unique(ant$Species)) #30 species
-
-# Issue: the number of sampling months per plot varies between 1 and 5 --> these are zeros (after checking with Heike)
-# the number of trap locations per plot varies between 1 and 3 --> remove the ones with 1 and 
-# Match the traps with the Core arthropod dataset then
-# randomly select 2 for each month as in Grevé et al 2018, Ecosphere
-
-
-# Transform "Oct2010" into "Oct"
-ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
-
-# Randomly select two traps per month
-set.seed(16)
-ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
-
-# Add zeros for missing months
-
-# Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
-
-# Average?
-
-
-
-# Same traps as for arthropods so remove HEW34
-
-# Aggregate information across the whole sampling period (monthly sampling)
-ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
-
-plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
-  ant <- ant[,.(Plot_ID, Species, Abundance)] #only target columns
-
-ant$Species<-gsub(" ","_",ant$Species)
-ant$DataID<-23986
-ant$Dataversion<-"2.1.6"
-ant$Year<-"2014_2015"
-ant<-data.table(BEplotNonZeros(ant,"Plot",plotnam = "Plot_bexis"))
-setnames(ant,"Presence_absence","value")
-ant$type<-"presenceabsence"
-ant$Trophic_level<-ant$Fun_group_broad<-ant$Fun_group_fine<-"omnivore.ant"
-ant$Group_broad<-ant$Group_fine<-"Formicidae"
-#ant[, c("Group_fine", "sp") := tstrsplit(Species, "_", fixed=TRUE)]
-#ant$sp<-NULL
-length(unique(ant$Species))*length(unique(ant$Plot)) #31 species and 110 plots..
-
-#overlap with existing species?
-intersect(unique(ant$Species),unique(grl2$Species)) #11 overlapping species!
-
-#remove from ant dataset (because pollinator dataset is more complete)
-ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
-
-grl2<-rbind(grl2,ant)
-rm(ant); gc()
-
-
-####################################################################################
-
-
-
 
 
 #x. Add protists 2011 and 2017#####################################################
@@ -1031,6 +939,170 @@ rm(prot, protoo, proinf); gc()
 ####################################################################################
 
 
+#x. Add moth dataset (26026) #######################################################
+moth <- fread("Exploratories/Data/FORESTS/Update2021/26026_2_data.txt")
+summary(moth) #zeros are missing
+
+# Keep only forest plots
+moth <- moth[Habitat=="W"]
+
+# Remove unwanted columns
+moth[,c("Exploratory", "Habitat", "Familie", "Subfamily", "Genus", 
+        "Author", "Comments", "CollectionDate"):=NULL]
+
+# Check species overlap with main dataset
+length(unique(moth$Species)) #397 species
+length(setdiff(unique(moth$Species), unique(frs2$Species))) #not a single species overlaps!
+
+# Check if all plots have two repetitions ("CollectionRun")
+moth[is.na(NumberIndividuals)] #missing collection runs are NAs
+length(unique(moth[is.na(NumberIndividuals)]$PlotID)) #14 plots with missing info --> maybe use one run?
+
+# Explore first and second repetition
+cr1 <- moth[CollectionRun==1]
+cr2 <- moth[CollectionRun==2]
+# How many species overlap?
+length(intersect(unique(cr1$Species), unique(cr2$Species))) #199 species overlap
+# Is species richness in the two repetitions correlated?
+sr1 <- dcast.data.table(cr1, PlotID~Trophic_level, fun.aggregate = sum, value.var= "NumberIndividuals")
+sr2 <- dcast.data.table(cr2, PlotID~Trophic_level, fun.aggregate = sum, value.var= "NumberIndividuals")
+plot(sr1$detritivore ~ sr2$detritivore)
+cor(sr1$detritivore, sr2$detritivore) #0.34
+plot(sr1$herbivore ~ sr2$herbivore)
+cor(sr1$herbivore, sr2$herbivore) #0.29
+# --> repetitions not correlated, need to use both and loose plots
+rm(sr1,sr2,cr1,cr2)
+
+# Aggregate both repetitions
+moth[,value := sum(NumberIndividuals), by=c("PlotID", "Species")]
+moth[PlotID=="SEW38" & CollectionRun==2] #check if NAs are kept -> yes
+moth <- unique(moth, by=c("PlotID","Species"))
+
+# Check dimension
+length(unique(moth$Species)) * length(unique(moth$PlotID))#397 species and 150 plots --> missing combinations are zeros
+
+# Add zeros
+moth <- dcast.data.table(moth, Species + Trophic_level + Fun_group_broad + Fun_group_fine ~ PlotID, 
+                          value.var = "value", fill = 0)
+moth[1:10,1:10]
+#remove Species==NA
+moth <- moth[!is.na(Species)]
+#melt
+moth <- melt.data.table(moth, id.vars = 1:4,
+                        measure.vars = 5:ncol(moth),
+                        variable.name = "Plot")
+# Check dimension again
+length(unique(moth$Species)) * length(unique(moth$Plot))#396 species (one was NA) and 150 plots --> missing combinations are zeros
+
+# Add missing columns: plot Bexis, type, DataID, Year, Group_broad, Group_fine
+moth <- BEplotNonZeros(moth, "Plot", "Plot_bexis")
+moth$type <- "abundance"
+moth$DataID <- 26026
+moth$Year <- 2018
+moth$Group_broad <- "arthropod"
+moth$Group_fine <- "Lepidoptera"
+
+# Add to main dataset
+frs2 <- rbindlist(list(frs2, moth), use.names = T)
+####################################################################################
+
+
+
+#x. Example header #################################################################
+####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#x. Add ants dataset 21906 #########################################################
+ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
+
+# Explore data
+unique(ant$Traptype)
+unique(ant$CollectionYear) #2008
+ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
+ant[is.na(Abundance)] #none
+length(unique(ant$Plot_ID)) * #150 plots
+  length(unique(ant$CollectionMonth))* #5 months
+  length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
+  length(unique(ant$Species)) #30 species
+
+# Issue: the number of sampling months per plot varies between 1 and 5 --> these are zeros (after checking with Heike)
+# the number of trap locations per plot varies between 1 and 3 --> remove the ones with 1 and 
+# Match the traps with the Core arthropod dataset then
+# randomly select 2 for each month as in Grevé et al 2018, Ecosphere
+
+
+# Transform "Oct2010" into "Oct"
+ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
+
+# Randomly select two traps per month
+set.seed(16)
+ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
+
+# Add zeros for missing months
+
+# Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
+
+# Average?
+
+
+
+# Same traps as for arthropods so remove HEW34
+
+# Aggregate information across the whole sampling period (monthly sampling)
+ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
+
+plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
+ant <- ant[,.(Plot_ID, Species, Abundance)] #only target columns
+
+ant$Species<-gsub(" ","_",ant$Species)
+ant$DataID<-23986
+ant$Dataversion<-"2.1.6"
+ant$Year<-"2014_2015"
+ant<-data.table(BEplotNonZeros(ant,"Plot",plotnam = "Plot_bexis"))
+setnames(ant,"Presence_absence","value")
+ant$type<-"presenceabsence"
+ant$Trophic_level<-ant$Fun_group_broad<-ant$Fun_group_fine<-"omnivore.ant"
+ant$Group_broad<-ant$Group_fine<-"Formicidae"
+#ant[, c("Group_fine", "sp") := tstrsplit(Species, "_", fixed=TRUE)]
+#ant$sp<-NULL
+length(unique(ant$Species))*length(unique(ant$Plot)) #31 species and 110 plots..
+
+#overlap with existing species?
+intersect(unique(ant$Species),unique(grl2$Species)) #11 overlapping species!
+
+#remove from ant dataset (because pollinator dataset is more complete)
+ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
+
+grl2<-rbind(grl2,ant)
+rm(ant); gc()
+
+
+####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #x. Homogenise trophic group names #################################################
@@ -1096,3 +1168,21 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #contact Bexis to know about the new version numbers
 
 ####################################################################################
+
+
+############## Datasets not included and why #####################
+# Soil macrofauna (ID: 22066) -> not added because order level and overlap with arthropods
+# --> add to metadata
+# soilmf <- fread("Exploratories/Data/FORESTS/Update2021/22066_2_data.txt")
+# unique(soilmf$Orderlevel) #many overlaps with arthropod dataset
+# unique(frs2[Group_broad=="arthropod"]$Group_fine)
+# setdiff(unique(soilmf$Orderlevel), unique(frs2[Group_broad=="arthropod"]$Group_fine))
+# setdiff(unique(soilmf$Orderlevel), unique(frs2$Group_fine))
+
+#Bark beetles --> overlap with arthropods + too specific: do not add but put info in metadata
+#20034: Bark Beetle Antagonists sampled with PheromoneTraps in Forest EPs in 2010
+#20031: Bark Beetles sampled with Pheromone Traps in Forest EPs in 2010 # this is in the dfunctions dataset
+#20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
+#24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
+
+
