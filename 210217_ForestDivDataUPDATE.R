@@ -18,12 +18,14 @@
 # x. Add snails: dataset 24986
 # x. Add earthworms: dataset 21687
 # x. Add birds 2018: dataset 25306 ----------> to finish (homogenise HEW2 and HEW51)
-# x. Add HEW51 for all species (NAs)
+#TODO x. Add protists Cercozoa and  --> #TODO Oomycota
+#TODO? x. Add HEW51 for all species (NAs)
 #TODO add HEW2 to all new datasets?
+
 
 #TODO x. Update plant dataset (add more recent years: ID 30909) --> wait for Ralph's answer
 #TODO x. Add ants: dataset 21906 --> wait for Heike's answer
-#TODO x. Add protists Cercozoa and  --> #TODO Oomycota
+
 
 
 #TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
@@ -37,6 +39,8 @@
 #this is in the dfunctions dataset
 #20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
 #--> check overlap but in principle remove
+#24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
+#--> too specific, add the info in metadata
 
 #TODO nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
 # maybe search using species / column names
@@ -661,37 +665,39 @@ sort(unique(bird$Species))
 
 #x. Update plant dataset 30909######################################################
 # Remove old plant dataset and replace by new one: ID 30909
-plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_3_data.txt")
+plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_5_data.txt") ##redo with this new version
 
-#keep only understory sp = remove B1 B2 = trees from 5 meters
+# keep only understory sp = remove B1 B2 = trees from 5 meters
 plants <- plants[!Layer %in% c("B1","B2")]
 
-#aggregate understory plants and remove layer column
+# aggregate understory plants and remove layer column
 plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
 plantagg[,`:=`(Layer = NULL, Cover=NULL)]
 plantagg <- unique(plantagg, by=c("EP_PlotID","Species","Year"))
 
-#check dimension
+# check dimension
 length(unique(plants$EP_PlotID))* length(unique(plants$Species))* length(unique(plants$Year)) 
 #151 plots (HEW51 replaces HEW02)
-#does not correspond to plantagg --> missing NAs? yes, HEW02 misses NAs for 2020
+#does not correspond to plantagg --> missing NAs? yes, HEW51 misses all years before 2017
 sum(is.na(plantagg$value))
+# NAS <- plantagg[is.na(value)]; unique(NAS$EP_PlotID)
 
 # create dataset with all combinations of plot year and species
-allcomb <- CJ(EP_PlotID=unique(plants$EP_PlotID),
-              Species=unique(plants$Species),
-              Year=unique(plants$Year))
+allcomb <- CJ(EP_PlotID = unique(plants$EP_PlotID),
+              Species = unique(plants$Species),
+              Year = unique(plants$Year))
 
+allcomb <- data.table(BEplotZeros(allcomb,"EP_PlotID","Useful_EPPlotID"))
 
-#SEW04 misses data for 2010
-#HEW51 should have before 2017
-plantagg[EP_PlotID=="HEW51"]
+# SEW04 misses data for 2010 --> solved in dataset version 5
+# HEW51 should have before 2017
+# plantagg[EP_PlotID=="HEW51"]
 
 #what is missing from the dataset?
-plantagg$missing<-"no"
-allcomb <- merge(allcomb, plantagg, by=c("EP_PlotID","Species","Year"), all=T)
-allcomb <- allcomb[is.na(missing)]
-write.table(allcomb,"missingCombinations.txt",row.names = F) #file sent to Ralph on 29/04/21
+# plantagg$missing<-"no"
+# allcomb <- merge(allcomb, plantagg, by=c("EP_PlotID","Species","Year"), all=T)
+# allcomb <- allcomb[is.na(missing)]
+# write.table(allcomb,"missingCombinations.txt",row.names = F) #file sent to Ralph on 29/04/21
 
 # #add NAs for HEW02 in 2020
 # plantagg[Useful_EPPlotID=="HEW02"]
@@ -702,17 +708,35 @@ write.table(allcomb,"missingCombinations.txt",row.names = F) #file sent to Ralph
 # length(unique(plants$EP_PlotID))* length(unique(plants$Species))* length(unique(plants$Year)) - nrow(plantagg)
 # 3591/399
 
-
-
-
-
-setnames(plantagg,"abund2","cover")
-plantagg$dataID<-20366
-
-#homogenise column names
-setnames(plants, names(plants), c("Plot_bexis", "Plot", "Year", "Layer","Species","value"))
-
 # check if Cephalanthera_damasonium has information --> yes
+#SEW04 misses 2010 --> solved in dataset version 5
+
+# add missing combinations
+plantagg <- merge(allcomb, plantagg, by=c("EP_PlotID", "Useful_EPPlotID", "Species", "Year"), all=T)
+
+# homogenise column names
+setnames(plantagg, names(plantagg), c("Plot_bexis", "Plot", "Species", "Year", "value"))
+
+# add missing columns
+plantagg$DataID <- 30909
+plantagg$type <- "cover"
+
+# create species info
+# oldpl <- tr[Group_broad=="plant"]
+# newpl <- data.table(Species = unique(plantagg$Species))
+# newpl <- merge(newpl, oldpl, by="Species", all.x=T)
+# # write table and fill manually
+# write.table(newpl, "Exploratories/Data/FORESTS/Update2021/plant_species_update21.txt", row.names = F)
+rm(oldpl)
+newpl <- fread("Exploratories/Data/FORESTS/Update2021/plant_species_update21.txt", h=T)
+
+# Merge
+plantagg <- merge(plantagg, newpl, by="Species")
+
+# Remove old plant dataset and add new one
+frs2 <- frs2[!Group_broad == "plant"]
+frs2 <- rbindlist(list(frs2, plantagg), use.names = T)
+rm(plantagg, plants, newpl, allcomb); gc()
 
 ####################################################################################
 
@@ -730,18 +754,28 @@ length(unique(ant$Plot_ID)) * #150 plots
   length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
    length(unique(ant$Species)) #30 species
 
-# Issue: the number of sampling months per plot varies between 1 and 5
-# the number of trap locations per plot varies between 1 and 3
-# --> not possible to sum, average would be unfair, only way is to select months and loose plots
-# also select randomly 2 traps as in Grevé et al 2018, Ecosphere
-
-ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
+# Issue: the number of sampling months per plot varies between 1 and 5 --> these are zeros (after checking with Heike)
+# the number of trap locations per plot varies between 1 and 3 --> remove the ones with 1 and 
+# Match the traps with the Core arthropod dataset then
+# randomly select 2 for each month as in Grevé et al 2018, Ecosphere
 
 
-# TODO transform "Oct2010" into "Oct" ##TODO
+# Transform "Oct2010" into "Oct"
+ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
 
-# Restrict to months with more plots visited
+# Randomly select two traps per month
+set.seed(16)
+ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
 
+# Add zeros for missing months
+
+# Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
+
+# Average?
+
+
+
+# Same traps as for arthropods so remove HEW34
 
 # Aggregate information across the whole sampling period (monthly sampling)
 ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
@@ -1058,7 +1092,7 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #26467_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2011; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
 #26468_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2014; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
 #26469_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.1
-#plants: 30909_3_Dataset version 3
+#plants: 30909_5_Dataset version 5
 #contact Bexis to know about the new version numbers
 
 ####################################################################################
