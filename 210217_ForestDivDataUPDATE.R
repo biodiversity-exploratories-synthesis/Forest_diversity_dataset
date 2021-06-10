@@ -1,5 +1,5 @@
-########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version ?? ##########
-# Changes from version with DataID: ?? to ??
+########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version 1 ##########
+# Changes from version with DataID: 24607 and 24608 to ??
 # Script by: Caterina Penone, University of Bern
 # March - June 2021
 ############################################################################
@@ -21,15 +21,13 @@
 # x. Add protists Cercozoa and Oomycota
 # x. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
 # x. Update plant dataset (add more recent years: ID 30909)
+# x. Add nematodes dataset (received directly from L.Ruess)
 #TODO add HEW2 NAs to all new datasets (later than 2017)
 #TODO x. Create a column with data versions --> at the end
 
 #TODO x. Add ants: dataset 21906 --> wait for Heike's answer
 #TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
-#TODO nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
-# maybe search using species / column names
 #TODO add AMF?
-#TODO bacteria --> why HEW02 has data? no data for HEW51?
 #TODO fungi deadwood they come from two datasets --> do something to differentiate?
 #micromammals 126 plots --> need to add NAs
 # lichens and mosses add mixed year so no mistakes done on year (or add to metadata)
@@ -39,6 +37,8 @@
 
 #TODO
 ### Add to metadata ###
+
+#This dataset is mostly about understorey and belowground
 
 # Add moth dataset (26026) --> two repetitions aggregated and if one missing -> NA
 
@@ -56,6 +56,7 @@
 
 #ants dataset 21906: ants were sampled monthly, samples are aggregated
 
+#nematodes are at family level
 
 
 #lichens dataset --> ok, data come from 2 different years
@@ -72,6 +73,19 @@
 #24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
 #22066: The soil macrofauna orderlevel from all forest EPs sampled in spring 2011
 #21686: The earthworm biomass of all forest EPs from spring 2011
+#22027: Window traps in tree crowns on forest VIPs and EPs, 2008, Coleoptera, Hemiptera, Orthoptera
+
+# 27686: Arbuscular mycorrhizal fungi on all 300 EPs (from Soil Sampling Campains 2011, 2014 and 2017; Illumina MiSeq) - ASV taxonomic look-up table
+# 27688: Arbuscular mycorrhizal fungi on all 150 forest EPs (from Soil Sampling Campain 2011; Illumina MiSeq) - ASV abundances
+# 27690: Arbuscular mycorrhizal fungi on all 150 forest EPs (from Soil Sampling Campain 2014; Illumina MiSeq) - ASV abundances
+# 27692: Arbuscular mycorrhizal fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances
+# 
+# 22968: Fungal communities from fine roots collected from 150 forest plots in 2014 by Illumina sequencing  - normalized to 8400 reads per plot
+# 30973: Abundant of root-associated fungi from the organic layer and mineral soil across 150 forest experimental plots (soil sampling campaign, 2017) - OTU taxonomic look-up table
+# 30974: Abundant of root-associated fungi from organic layer and mineral soil across 150 forest experimental plots (soil sampling campaign, 2017)
+
+
+
 
 require(data.table) #to manage large datasets
 #setwd("N:/")
@@ -1006,7 +1020,29 @@ moth$Group_fine <- "Lepidoptera"
 frs2 <- rbindlist(list(frs2, moth), use.names = T)
 ####################################################################################
 
+#x. Add nematodes dataset ##########################################################
+# This dataset is not in Bexis, the author is not available at the moment but agreed to
+# add it to the synthesis dataset. We will update the code once the dataset is in Bexis
+nem <- fread("Exploratories/Data/FORESTS/Update2021/nematodes.csv")
 
+# Long format
+nem <- melt.data.table(nem, variable.name = "Species")
+summary(nem)
+
+# Merge species info
+neminfo <- fread("Exploratories/Data/FORESTS/Update2021/nematode_species_info.csv")
+nem <- merge(nem, neminfo, by="Species")
+
+# Add missing columns
+nem$type <- "presence_absence"
+nem$DataID <- NA
+nem$Year <- 2014
+nem <- BEplotNonZeros(nem,"Plot","Plot_bexis")
+
+# Add to main dataset
+frs2 <- rbindlist(list(frs2, nem), use.names = T)
+rm(nem, neminfo)
+####################################################################################
 
 #x. Example header #################################################################
 ####################################################################################
@@ -1217,6 +1253,7 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #26469_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.1
 #plants: 30909_5_Dataset version 5
 #moth: version 2
+#nematodes: NA
 
 
 ####################################################################################
