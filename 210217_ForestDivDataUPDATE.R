@@ -19,11 +19,11 @@
 # x. Add earthworms: dataset 21687
 # x. Add birds 2018: dataset 25306 ----------> to finish (homogenise HEW2 and HEW51)
 # x. Add protists Cercozoa and Oomycota
+# x. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
 # x. Update plant dataset (add more recent years: ID 30909)
 #TODO add HEW2 NAs to all new datasets (later than 2017)
 #TODO x. Create a column with data versions --> at the end
 
-#TODO x. # Moth abundance from lighttrapping on all grassland and forest plots (26026)
 #TODO x. Add ants: dataset 21906 --> wait for Heike's answer
 #TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
 #TODO nematodes from liliane ruess (not in Bexis) --> ask Bexis if they can find it or
@@ -1028,7 +1028,7 @@ frs2 <- rbindlist(list(frs2, moth), use.names = T)
 ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
 
 # Explore data
-unique(ant$Traptype)
+unique(ant$Traptype) #only BF
 unique(ant$CollectionYear) #2008
 ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
 ant[is.na(Abundance)] #none
@@ -1046,7 +1046,55 @@ length(unique(ant$Plot_ID)) * #150 plots
 # Transform "Oct2010" into "Oct"
 ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
 
-# Randomly select two traps per month
+# Recover which traps were destroyed (from arhtropod Core dataset)
+arthro <- fread("Exploratories/Data/FORESTS/Update2021/17016_2_data.txt")
+arthro <- arthro[CollectionYear==2008] #only 2008
+arthro <- arthro[Traptype=="BF"] #only BF traps
+unique(arthro$CollectionMonth)
+arthro <- arthro[!CollectionMonth=="Apr"] #remove April
+arthro[CollectionMonth=="Okt", CollectionMonth:="Oct"] #use same name of ant dataset
+summary(arthro) #no NAs
+length(unique(arthro$PlotID)) * #150
+  length(unique(arthro$Subplot)) * #4 (but only 3 traps installed!)
+    length(unique(arthro$CollectionMonth)) #5
+#total should be 3000 but dimension is 2250 so 750 traps lost (ok because 3 repetitions per plot)
+#--> by merging we can recover the zeros!
+#adapt the arthro dataset to match the ant one
+names(arthro)
+names(ant)
+arthro[,c("TrapID", "Exploratory", "Traptype", "CollectionYear", "CollectionDate"):=NULL] #remove redundant columns
+setnames(arthro,c("PlotID", "Subplot"), c("Plot_ID", "Trapnumber")) #match names to ant dataset
+#ant dataset with only plot, trap, month
+zeroant <- unique(ant[,.(Plot_ID, Trapnumber, CollectionMonth)], 
+                  by=c("Plot_ID", "Trapnumber", "CollectionMonth")) #734
+zeroant$id <- 1
+zeroant <- merge(arthro, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth"), all.x = T)
+zeroant[is.na(id), id:=0]
+
+#Merge to add zeros
+ant2 <- merge(ant, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth")) #--> issue here
+
+# check combinations in ant and not in arthro dataset
+strangecombi <- ant[!zeroant, on=.(Plot_ID, Trapnumber, CollectionMonth)]
+# --> 4 samples do not exist in the arthropod dataset...! I officially hate this dataset
+# - Plot_ID: HEW2, CollectionMonth: June, Trapnumber: NO
+# In HEW2, in June there was NW, SO, SW (but no NO traps).
+# The ant dataset reports information for: NO and SO
+# 
+# - Plot_ID: AEW36, CollectionMonth: June, Trapnumber: SW
+# In AEW36, in June there was NO, NW, SO (but no SW traps).
+# The ant dataset reports information for: NW, SW
+# 
+# - Plot_ID: AEW44, CollectionMonth: June, Trapnumber: SO
+# In AEW44, in June there was NO, NW, SW (but no SO traps).
+# The ant dataset reports information for: NO and SO.
+
+
+# 30 plots have zero ants (in any of the traps) -- > add them back later after aggregating
+plotstoadd <- unique(strangecombi[is.na(Species)]$Plot_ID)
+
+
+# Randomly select two traps per month?
 set.seed(16)
 ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
 
@@ -1055,6 +1103,9 @@ ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #7
 # Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
 
 # Average?
+
+#remove pitfall HEW34
+arthro<-arthro[!(Traptype=="BF" & PlotID=="HEW34")] #######rather add NAs
 
 
 
@@ -1165,7 +1216,8 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #26468_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2014; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
 #26469_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.1
 #plants: 30909_5_Dataset version 5
-#contact Bexis to know about the new version numbers
+#moth: version 2
+
 
 ####################################################################################
 
