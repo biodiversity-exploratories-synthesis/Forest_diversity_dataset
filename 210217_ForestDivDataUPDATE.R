@@ -27,7 +27,6 @@
 #TODO fungi deadwood they come from two datasets --> do something to differentiate?
 #TODO: check if update in bats is needed
 
-
 #TODO x. Homogenise trophic group names --> update at the end
 #TODO x. Create a column with data versions --> update at the end
 
