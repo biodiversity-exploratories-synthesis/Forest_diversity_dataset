@@ -1,36 +1,34 @@
-########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY - version 1 ##########
+########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY 2021 ##########
 # Changes from version with DataID: 24607 and 24608 to ??
 # Script by: Caterina Penone, University of Bern
-# March - June 2021
+# March - November 2021
 ############################################################################
 
 # This update applies the following changes:
-# 1. Homogeneise trophic level names as in grasslands dataset
-# x. Homogenise trophic group names
+# 1. Homogenize trophic level names as in grasslands dataset
 # x. Check zeros and NAs issues
 # x. Explore issue in Group_fine and Fun_group_fine (arthropods)
 # x. Remove and add arthropods + add DataID (see point 4)
-#TODO x. Add HEW51 for all species and years NAs (here or at the end?)
 # x. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
-#TODO --> fix HEW2 HEW51 (wait for JOhannes' answer)
 # x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
 #    and 26473 (species table))
 # x. Add snails: dataset 24986
 # x. Add earthworms: dataset 21687
-# x. Add birds 2018: dataset 25306 ----------> to finish (homogenise HEW2 and HEW51)
+# x. Add birds 2018: dataset 25306
 # x. Add protists Cercozoa and Oomycota
 # x. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
 # x. Update plant dataset (add more recent years: ID 30909)
 # x. Add nematodes dataset (received directly from L.Ruess)
-#TODO add HEW2 NAs to all new datasets (later than 2017)
-#TODO x. Create a column with data versions --> at the end
+# x. Fix species names with multiple underscores or underscores at the end
+# x. Change years to "2007_2008" lichens and mosses
+# x. Add NAs for missing plots in micromammals
 
-#TODO x. Add ants: dataset 21906 --> wait for Heike's answer
-#TODO x. Fix species names with multiple underscores or underscores at the end --> needed?
 #TODO add AMF?
 #TODO fungi deadwood they come from two datasets --> do something to differentiate?
-#micromammals 126 plots --> need to add NAs
-# lichens and mosses add mixed year so no mistakes done on year (or add to metadata)
+#TODO: check if update in bats is needed
+
+#TODO x. Homogenise trophic group names --> update at the end
+#TODO x. Create a column with data versions --> update at the end
 
 #TODO in GRASSLAND DATASET:
 # add oomycota and change protist_oomycota, cercozoa (also in OTU name)
@@ -315,9 +313,6 @@ rm(atl, arth); gc()
 frs2<-merge(frs, tr, by="Species")
 ####################################################################################
 
-#x. Add HEW51 for all species and years #############################################
-####################################################################################
-
 #x. Update bacteria datasets #######################################################
 # Remove old datasets and replace by: 24868 (2011), 25067 (2014), 26569 (2017)
 # This is RNA (not DNA as before)
@@ -344,6 +339,10 @@ b14[,c("Taxonomy","phylum","class","order","family","genus","species"):=NULL]
 
 b17[, c("kingdom", "phylum", "class", "order", "family", "genus", "species") := tstrsplit(Taxonomy, ", ", fixed=TRUE)]
 b17[,c("Taxonomy","phylum","class","order","family","genus","species"):=NULL]
+
+# fix plot name in 2017 dataset (HEW2 --> HEW51) #checked with Johannes Sikorski
+sort(unique(b17$Plot_ID))
+b17[Plot_ID=="HEW2", Plot_ID:="HEW51"]
 
 # 2014 and 2017 together
 bac <- rbindlist(list(b14, b17))
@@ -407,6 +406,9 @@ f11$Year <- 2011; f11$DataID <- 26467
 f14$Year <- 2014; f14$DataID <- 26468
 f17$Year <- 2017; f17$DataID <- 26469
 
+# check if 2017 has HEW51
+sort(unique(f17$Plotid)) #all good
+
 # all years together
 soilf<-rbindlist(list(f11,f14,f17))
 rm(f11,f14,f17)
@@ -456,6 +458,9 @@ snail <- fread("Exploratories/Data/FORESTS/Update2021/24986.txt")
 # select forests
 snail <- snail[Habitat=="FOR"]
 snail$Habitat <- snail$Exploratory <- NULL # not needed columns
+
+# check HEw51
+sort(unique(snail$Plot)) #all good
 
 # check for missing plot X species combinations
 length(unique(snail$Plot))*length(unique(snail$Species))*5 #146 plots and 63 species (and 5 replicates per plot)
@@ -625,7 +630,7 @@ unique(frs2[Group_broad=="bird"]$Trophic_level)
 bird$Trophic_level<-"tertiary.consumer.birdbat"
 bird[Fun_group_broad=="vert.herb",Trophic_level:="herbivore.bird"]
 
-#create "zero dataset" for all species that are not in the 2018 dataset
+# create "zero dataset" for all species that are not in the 2018 dataset
 oldbi <- sort(setdiff(unique(frs2[Group_broad=="bird"]$Species), unique(bird$Species))) #those need zeros in 2018 (47 species)
 oldbi <- frs2[Species %in% oldbi & Year=="2008"] #select only one year
 oldbi$Year <- 2018
@@ -634,31 +639,33 @@ oldbi$DataID <- "25306"
 150 * 47 #150 plots and 47 species = 7050 occurrences (dimension of oldbird dataset)
 150 * 54 #dimension of bird dataset = 8100 occurrences (dimension of bird dataset)
 
-#add to main dataset
+# check hew51
+sort(unique(bird$Plot))
+
+# add to main dataset
 setdiff(names(bird), names(frs2))
-frs22 <- rbindlist(list(frs2, bird, oldbi), use.names=TRUE)
+frs2 <- rbindlist(list(frs2, bird, oldbi), use.names=TRUE)
 
-#checks
-#TODO homogenise HEW2 HEW51
-checkbi <- frs22[Group_broad=="bird"] #90 900
-length(unique(checkbi$Species)) * length(unique(checkbi$Year)) * length(unique(checkbi$Plot)) #91 506
-checkbi2 <- setDT(checkbi)[CJ(Species=Species, Plot_bexis=Plot_bexis, Year=Year, unique=T), 
-                           on=.(Species, Plot_bexis, Year)]
-checkbi2 <- checkbi2[is.na(Plot)]
-frs2[Species=="Accipiter_gentilis"]
-frs2[Species=="Accipiter_gentilis" & Plot_bexis=="HEW51"]
-sort(unique(checkbi[is.na(value)]$Species))
-sort(unique(checkbi$Species))
-sort(unique(bird$Species))
+# backward checks
+# checkbi <- frs22[Group_broad=="bird"] #90 900
+# length(unique(checkbi$Species)) * length(unique(checkbi$Year)) * length(unique(checkbi$Plot)) #91 506
+# length(unique(checkbi$Species)) * length(unique(checkbi$Year)) * 150 #ok, the difference is due to HEW51
+# checkbi2 <- setDT(checkbi)[CJ(Species=Species, Plot_bexis=Plot_bexis, Year=Year, unique=T), 
+#                            on=.(Species, Plot_bexis, Year)]
+# checkbi2 <- checkbi2[is.na(Plot)]
+# frs2[Species=="Accipiter_gentilis"]
+# frs2[Species=="Accipiter_gentilis" & Plot_bexis=="HEW51"]
+# sort(unique(checkbi[is.na(value)]$Species))
+# sort(unique(checkbi$Species))
+# sort(unique(bird$Species))
 
-
-#rm(allbirdtr,birdtr,bird,newsp,birdc,allpl,checkbi,newbioldy,oldbi,yearver,newbi); gc()
+rm(allbirdtr,birdtr,bird,newsp,birdc,allpl,checkbi,newbioldy,oldbi,yearver,newbi); gc()
 ####################################################################################
 
 
 #x. Update plant dataset 30909######################################################
 # Remove old plant dataset and replace by new one: ID 30909
-plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_5_data.txt") ##redo with this new version
+plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_5_data.txt")
 
 # keep only understory sp = remove B1 B2 = trees from 5 meters
 plants <- plants[!Layer %in% c("B1","B2")]
@@ -775,6 +782,10 @@ length(unique(pro11$OTUs)) * 6
 pro11 <- rbindlist(list(pro11,toadd))
 rm(toadd)
 
+# Change hew2 to hew51 in 2017
+sort(unique(pro17$EP_PlotID))
+pro17[EP_PlotID=="HEW2", EP_PlotID:="HEW51"]
+
 # Check species names matching
 setdiff(unique(pro11$OTUs),unique(pro17$variable)) #perfect
 setdiff(unique(pro17$variable),unique(pro11$OTUs)) #perfect
@@ -866,6 +877,10 @@ length(unique(pro11$OTU)) * length(unique(pro11$EP_PlotID))
 # Read species information / traits
 proinf <- fread("Exploratories/Data/FORESTS/Update2021/25768_2_data.txt")
 
+# Change hew2 to hew51 in 2017
+sort(unique(pro17$EP_PlotID))
+pro17[EP_PlotID=="HEW2", EP_PlotID:="HEW51"]
+
 # Add year, DataID and merge
 pro17$My_PlotID <- NULL; pro11$MyPlotID <- NULL
 pro17$DataID <- 25767; pro11$DataID <- 25766
@@ -876,7 +891,9 @@ rm(pro11, pro17)
 
 # Remove grassland plots
 length(unique(protoo$EP_PlotID))
-protoo <- protoo[!grepl("G", protoo$EP_PlotID)] #149 -> add NAs for missing plot
+protoo <- protoo[!grepl("G", protoo$EP_PlotID)] 
+length(unique(protoo[Year=="2011"]$Plot_bexis)) #150
+length(unique(protoo[Year=="2017"]$Plot_bexis)) #150
 
 #### Prepare species info table
 # Add Group broad and Group fine
@@ -938,8 +955,8 @@ protoo <- data.table(BEplotZeros(protoo, "Plot_bexis", plotnam = "Plot"))
 apply(prot, 2, function(x)sum(is.na(x)))
 apply(protoo, 2, function(x)sum(is.na(x)))
 
-length(unique(prot$Plot)) #150
-length(unique(protoo$Plot)) #150
+length(unique(prot$Plot)) #151
+length(unique(protoo$Plot)) #151
 
 length(unique(prot$Species)) #2101
 length(unique(protoo$Species)) #1148
@@ -1016,9 +1033,13 @@ moth$Year <- 2018
 moth$Group_broad <- "arthropod"
 moth$Group_fine <- "Lepidoptera"
 
+# check hew51
+sort(unique(moth$Plot)) #ok
+
 # Add to main dataset
 frs2 <- rbindlist(list(frs2, moth), use.names = T)
 ####################################################################################
+
 
 #x. Add nematodes dataset ##########################################################
 # This dataset is not in Bexis, the author is not available at the moment but agreed to
@@ -1044,151 +1065,70 @@ frs2 <- rbindlist(list(frs2, nem), use.names = T)
 rm(nem, neminfo)
 ####################################################################################
 
+
+#x. Fix underscores in species names ###############################################
+# Do some species have multiple underscores or underscores at the end?
+frs2[grep("__",frs2$Species),] #yes, replace with single underscores
+frs2$Species <- gsub("__","_",frs2$Species)
+frs2[grep("__",frs2$Species),] #none left
+
+# Any double underscores at the end of species names?
+frs2[grep("_$",frs2$Species),] #yes, remove
+frs2$Species <- sub("_$","",frs2$Species)
+####################################################################################
+
+
+#x. Change years for lichens and mosses ############################################
+# Both datasets have a mix of data collected in 2007 and 2008
+unique(frs2[DataID==4460]$Year) #lichens
+unique(frs2[DataID==4141]$Year) #mosses
+
+# Change year to 2007_2008 to avoid confusions
+# (this information will be added in the metadata)
+frs2 <- frs2[, Year:=as.character(Year)] #year is numeric, change this
+frs2[DataID %in% c(4460,4141), Year:="2007_2008"]
+frs2[is.na(Year)]
+####################################################################################
+
+
+#x. Add NAs for missing plots in micromammals ######################################
+# Check number of plots
+sort(unique(frs2[Group_broad == "micromammal"]$Plot)) #126 plots
+mm <- frs2[Group_broad == "micromammal"] #subset
+length(unique(mm$Plot)) #126
+length(unique(mm$Species)) #12
+length(unique(mm$Year)) #2
+126*12*2
+
+# Create missing combinations
+mm2 <- CJ(Species=unique(mm$Species), Plot=unique(mm$Plot), Year=unique(mm$Year))
+
+# Fill the rest of the columns
+mm2 <- merge(mm2, unique(mm[,.(Plot, Plot_bexis, type)]), by="Plot", all.x = T)
+mm2 <- merge(mm2, unique(mm[,.(Year, DataID)]), by="Year", all.x = T)
+mm2 <- merge(mm2, unique(mm[,.(Species, Group_broad, Group_fine, Trophic_level,
+                               Fun_group_broad, Fun_group_fine)]), by="Species", all.x = T)
+mm2 <- merge(mm2, mm[,.(Plot, Species, Year, value)], by = c("Plot", "Species", "Year"), all.x = T)
+
+sum(is.na(mm2$value)) #1051
+nrow(mm2) - nrow(mm) #1051 --> fine
+
+# Remove old micromamm dataset and add new one
+frs2 <- frs2[!Group_broad == "micromammal"]
+frs2 <- rbindlist(list(frs2, mm2), use.names = T)
+rm(mm, mm2); gc()
+####################################################################################
+
+
+
+
+#TODO: check if update in bats is needed
+#TODO add AMF?
+#TODO: did I put hew2 and 51 everywhere for plants?
+
+
 #x. Example header #################################################################
 ####################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#x. Add ants dataset 21906 #########################################################
-ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
-
-# Explore data
-unique(ant$Traptype) #only BF
-unique(ant$CollectionYear) #2008
-ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
-ant[is.na(Abundance)] #none
-length(unique(ant$Plot_ID)) * #150 plots
-  length(unique(ant$CollectionMonth))* #5 months
-  length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
-  length(unique(ant$Species)) #30 species
-
-# Issue: the number of sampling months per plot varies between 1 and 5 --> these are zeros (after checking with Heike)
-# the number of trap locations per plot varies between 1 and 3 --> remove the ones with 1 and 
-# Match the traps with the Core arthropod dataset then
-# randomly select 2 for each month as in Grevé et al 2018, Ecosphere
-
-
-# Transform "Oct2010" into "Oct"
-ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
-
-# Recover which traps were destroyed (from arhtropod Core dataset)
-arthro <- fread("Exploratories/Data/FORESTS/Update2021/17016_2_data.txt")
-arthro <- arthro[CollectionYear==2008] #only 2008
-arthro <- arthro[Traptype=="BF"] #only BF traps
-unique(arthro$CollectionMonth)
-arthro <- arthro[!CollectionMonth=="Apr"] #remove April
-arthro[CollectionMonth=="Okt", CollectionMonth:="Oct"] #use same name of ant dataset
-summary(arthro) #no NAs
-length(unique(arthro$PlotID)) * #150
-  length(unique(arthro$Subplot)) * #4 (but only 3 traps installed!)
-    length(unique(arthro$CollectionMonth)) #5
-#total should be 3000 but dimension is 2250 so 750 traps lost (ok because 3 repetitions per plot)
-#--> by merging we can recover the zeros!
-#adapt the arthro dataset to match the ant one
-names(arthro)
-names(ant)
-arthro[,c("TrapID", "Exploratory", "Traptype", "CollectionYear", "CollectionDate"):=NULL] #remove redundant columns
-setnames(arthro,c("PlotID", "Subplot"), c("Plot_ID", "Trapnumber")) #match names to ant dataset
-#ant dataset with only plot, trap, month
-zeroant <- unique(ant[,.(Plot_ID, Trapnumber, CollectionMonth)], 
-                  by=c("Plot_ID", "Trapnumber", "CollectionMonth")) #734
-zeroant$id <- 1
-zeroant <- merge(arthro, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth"), all.x = T)
-zeroant[is.na(id), id:=0]
-
-#Merge to add zeros
-ant2 <- merge(ant, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth")) #--> issue here
-
-# check combinations in ant and not in arthro dataset
-strangecombi <- ant[!zeroant, on=.(Plot_ID, Trapnumber, CollectionMonth)]
-# --> 4 samples do not exist in the arthropod dataset...! I officially hate this dataset
-# - Plot_ID: HEW2, CollectionMonth: June, Trapnumber: NO
-# In HEW2, in June there was NW, SO, SW (but no NO traps).
-# The ant dataset reports information for: NO and SO
-# 
-# - Plot_ID: AEW36, CollectionMonth: June, Trapnumber: SW
-# In AEW36, in June there was NO, NW, SO (but no SW traps).
-# The ant dataset reports information for: NW, SW
-# 
-# - Plot_ID: AEW44, CollectionMonth: June, Trapnumber: SO
-# In AEW44, in June there was NO, NW, SW (but no SO traps).
-# The ant dataset reports information for: NO and SO.
-
-
-# 30 plots have zero ants (in any of the traps) -- > add them back later after aggregating
-plotstoadd <- unique(strangecombi[is.na(Species)]$Plot_ID)
-
-
-# Randomly select two traps per month?
-set.seed(16)
-ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
-
-# Add zeros for missing months
-
-# Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
-
-# Average?
-
-#remove pitfall HEW34
-arthro<-arthro[!(Traptype=="BF" & PlotID=="HEW34")] #######rather add NAs
-
-
-
-# Same traps as for arthropods so remove HEW34
-
-# Aggregate information across the whole sampling period (monthly sampling)
-ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
-
-plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
-ant <- ant[,.(Plot_ID, Species, Abundance)] #only target columns
-
-ant$Species<-gsub(" ","_",ant$Species)
-ant$DataID<-23986
-ant$Dataversion<-"2.1.6"
-ant$Year<-"2014_2015"
-ant<-data.table(BEplotNonZeros(ant,"Plot",plotnam = "Plot_bexis"))
-setnames(ant,"Presence_absence","value")
-ant$type<-"presenceabsence"
-ant$Trophic_level<-ant$Fun_group_broad<-ant$Fun_group_fine<-"omnivore.ant"
-ant$Group_broad<-ant$Group_fine<-"Formicidae"
-#ant[, c("Group_fine", "sp") := tstrsplit(Species, "_", fixed=TRUE)]
-#ant$sp<-NULL
-length(unique(ant$Species))*length(unique(ant$Plot)) #31 species and 110 plots..
-
-#overlap with existing species?
-intersect(unique(ant$Species),unique(grl2$Species)) #11 overlapping species!
-
-#remove from ant dataset (because pollinator dataset is more complete)
-ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
-
-grl2<-rbind(grl2,ant)
-rm(ant); gc()
-
-
-####################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1208,6 +1148,9 @@ tr[Group_broad == "fungi.root.soil", Group_broad:= "SoilFungi.roots"]
 tr[Group_broad == "bacteria", Group_broad:= "Bacteria"]
 
 #TODO: same with other groups
+#TODO fungi deadwood they come from two datasets --> do something to differentiate?
+unique(frs2$Trophic_level)
+unique(frs2$Group_broad)
 
 rm(trG)
 ####################################################################################
@@ -1259,6 +1202,9 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 ####################################################################################
 
 
+
+
+
 ############## Datasets not included and why #####################
 # Soil macrofauna (ID: 22066) -> not added because order level and overlap with arthropods
 # --> add to metadata
@@ -1274,4 +1220,122 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #20035_Bark Beetles pest control based on samples with Pheromone Traps in Forest EPs in 2010_1.1.0
 #24106: Ambrosia beetles and antagonists sampled by Pheromone traps on all EPs in 2010 and on a subset in 2011
 
+#21906: Pitfall traps on forest EPs in 2008 subset Formicidae Species Abundances
+#Issues in data that cannot be solved for the moment, but the code is below, ready to be updated
+
+#x. Add ants dataset 21906 #########################################################
+ant <- fread("Exploratories/Data/FORESTS/Update2021/21906_2_data.txt")
+
+# Explore data
+unique(ant$Traptype) #only BF
+unique(ant$CollectionYear) #2008
+ant[is.na(Species)] #some all NAs with abundance = NA --> these are plots with no ants
+ant[is.na(Abundance)] #none
+length(unique(ant$Plot_ID)) * #150 plots
+  length(unique(ant$CollectionMonth))* #5 months
+  length(unique(ant$Trapnumber)) * #4 trap numbers, corresponding to cardinal points
+  length(unique(ant$Species)) #30 species
+
+# Issue: the number of sampling months per plot varies between 1 and 5 --> these are zeros (after checking with Heike)
+# the number of trap locations per plot varies between 1 and 3 --> remove the ones with 1 and 
+# Match the traps with the Core arthropod dataset then
+# randomly select 2 for each month as in Grevé et al 2018, Ecosphere
+
+
+# Transform "Oct2010" into "Oct"
+ant <- ant[CollectionMonth=="Oct2010", CollectionMonth:="Oct"]
+
+# Recover which traps were destroyed (from arhtropod Core dataset)
+arthro <- fread("Exploratories/Data/FORESTS/Update2021/17016_2_data.txt")
+arthro <- arthro[CollectionYear==2008] #only 2008
+arthro <- arthro[Traptype=="BF"] #only BF traps
+unique(arthro$CollectionMonth)
+arthro <- arthro[!CollectionMonth=="Apr"] #remove April
+arthro[CollectionMonth=="Okt", CollectionMonth:="Oct"] #use same name of ant dataset
+summary(arthro) #no NAs
+length(unique(arthro$PlotID)) * #150
+  length(unique(arthro$Subplot)) * #4 (but only 3 traps installed!)
+  length(unique(arthro$CollectionMonth)) #5
+#total should be 3000 but dimension is 2250 so 750 traps lost (ok because 3 repetitions per plot)
+#--> by merging we can recover the zeros!
+#adapt the arthro dataset to match the ant one
+names(arthro)
+names(ant)
+arthro[,c("TrapID", "Exploratory", "Traptype", "CollectionYear", "CollectionDate"):=NULL] #remove redundant columns
+setnames(arthro,c("PlotID", "Subplot"), c("Plot_ID", "Trapnumber")) #match names to ant dataset
+#ant dataset with only plot, trap, month
+zeroant <- unique(ant[,.(Plot_ID, Trapnumber, CollectionMonth)], 
+                  by=c("Plot_ID", "Trapnumber", "CollectionMonth")) #734
+zeroant$id <- 1
+zeroant <- merge(arthro, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth"), all.x = T)
+zeroant[is.na(id), id:=0]
+
+#Merge to add zeros
+ant2 <- merge(ant, zeroant, by=c("Plot_ID","Trapnumber","CollectionMonth")) #--> issue here
+
+# check combinations in ant and not in arthro dataset
+strangecombi <- ant[!zeroant, on=.(Plot_ID, Trapnumber, CollectionMonth)]
+# --> 4 samples do not exist in the arthropod dataset...! I officially hate this dataset
+# - Plot_ID: HEW2, CollectionMonth: June, Trapnumber: NO
+# In HEW2, in June there was NW, SO, SW (but no NO traps).
+# The ant dataset reports information for: NO and SO
+# 
+# - Plot_ID: AEW36, CollectionMonth: June, Trapnumber: SW
+# In AEW36, in June there was NO, NW, SO (but no SW traps).
+# The ant dataset reports information for: NW, SW
+# 
+# - Plot_ID: AEW44, CollectionMonth: June, Trapnumber: SO
+# In AEW44, in June there was NO, NW, SW (but no SO traps).
+# The ant dataset reports information for: NO and SO.
+
+
+# 30 plots have zero ants (in any of the traps) -- > add them back later after aggregating
+plotstoadd <- unique(strangecombi[is.na(Species)]$Plot_ID)
+
+
+# Randomly select two traps per month?
+set.seed(16)
+ant <- ant[,.SD[sample(.N, min(2,.N))], by = c("Plot_ID", "CollectionMonth")] #745
+
+# Add zeros for missing months
+
+# Final number should be: 150 plots x 2 traps x 5 month x 30 species = 45000
+
+# Average?
+
+#remove pitfall HEW34
+arthro<-arthro[!(Traptype=="BF" & PlotID=="HEW34")] #######rather add NAs
+
+# Same traps as for arthropods so remove HEW34
+
+# Aggregate information across the whole sampling period (monthly sampling)
+ant[,value:=sum(Abundance), by=c("Plot_ID", "Species")]
+
+plantagg <- plants[,value := sum(Cover), by=c("EP_PlotID","Species","Year")]
+ant <- ant[,.(Plot_ID, Species, Abundance)] #only target columns
+
+ant$Species<-gsub(" ","_",ant$Species)
+ant$DataID<-23986
+ant$Dataversion<-"2.1.6"
+ant$Year<-"2014_2015"
+ant<-data.table(BEplotNonZeros(ant,"Plot",plotnam = "Plot_bexis"))
+setnames(ant,"Presence_absence","value")
+ant$type<-"presenceabsence"
+ant$Trophic_level<-ant$Fun_group_broad<-ant$Fun_group_fine<-"omnivore.ant"
+ant$Group_broad<-ant$Group_fine<-"Formicidae"
+#ant[, c("Group_fine", "sp") := tstrsplit(Species, "_", fixed=TRUE)]
+#ant$sp<-NULL
+length(unique(ant$Species))*length(unique(ant$Plot)) #31 species and 110 plots..
+
+#overlap with existing species?
+intersect(unique(ant$Species),unique(grl2$Species)) #11 overlapping species!
+
+#remove from ant dataset (because pollinator dataset is more complete)
+ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
+
+grl2<-rbind(grl2,ant)
+rm(ant); gc()
+
+
+####################################################################################
 
