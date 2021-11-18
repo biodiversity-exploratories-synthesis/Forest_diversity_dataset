@@ -597,7 +597,7 @@ bird[Plot %in% c("AEW4", "AEW45", "HEW32", "SEW10", "SEW15"), value:=NA]
 setnames(bird, names(bird), c("Species","Fun_group_fine","Plot_bexis","value")) #rename to match main table
 bird <- data.table(BEplotZeros(bird,"Plot_bexis",plotnam = "Plot")) #add plotzero
 bird$type <- "abundance"; bird$DataID <- 25306; bird$Year <- 2018 #add metadata
-bird$Group_broad <- "bird"; bird$Group_fine <- "bird"
+bird$Group_broad <- "bird"; bird$Group_fine <- "Bird"
 
 #Harmonise species names (keep the ones that are already in synthesis dataset)
 sort(setdiff(unique(bird$Species), unique(frs2[Group_broad=="bird"]$Species))) # 5 "new" species
@@ -617,6 +617,26 @@ bird[Fun_group_fine=="Omnivore", Fun_group_fine:="omnivore"]
 bird[Fun_group_fine=="Invertebrate", Fun_group_fine:="insectivore"]
 bird[Fun_group_fine=="PlantSeed", Fun_group_fine:="granivore"] 
 bird[Fun_group_fine=="VertFishScav", Fun_group_fine:="carnivore"]
+
+#some species have different trophic categories in both datasets, keep old ones
+bird[Species=="Corvus_corax", Fun_group_fine:="omnivore"]
+bird[Species=="Corvus_corone_cornix", Fun_group_fine:="omnivore"]
+bird[Species=="Corvus_corone_corone", Fun_group_fine:="omnivore"]
+bird[Species=="Cyanistes_caeruleus", Fun_group_fine:="insectivore"]
+bird[Species=="Dendrocopos_major", Fun_group_fine:="insectivore"]
+bird[Species=="Erithacus_rubecula", Fun_group_fine:="insectivore"]
+bird[Species=="Fringilla_coelebs", Fun_group_fine:="granivore"]
+bird[Species=="Grus_grus", Fun_group_fine:="omnivore"]
+bird[Species=="Oriolus_oriolus", Fun_group_fine:="insectivore"]
+bird[Species=="Parus_major", Fun_group_fine:="insectivore"]
+bird[Species=="Parus_palustris", Fun_group_fine:="insectivore"]
+bird[Species=="Periparus_ater", Fun_group_fine:="insectivore"]
+bird[Species=="Prunella_modularis", Fun_group_fine:="insectivore"]
+bird[Species=="Sturnus_vulgaris", Fun_group_fine:="insectivore"]
+bird[Species=="Sylvia_atricapilla", Fun_group_fine:="insectivore"]
+bird[Species=="Turdus_merula", Fun_group_fine:="insectivore"]
+bird[Species=="Turdus_philomelos", Fun_group_fine:="insectivore"]
+bird[Species=="Turdus_viscivorus", Fun_group_fine:="insectivore"]
 
 # create Group_broad and Fun_group_broad
 unique(frs2[Group_broad=="bird"]$Fun_group_broad)
@@ -1198,7 +1218,25 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 
 ####################################################################################
 
+#TODO
+##########Save the diversity and characteristics tables separately ###########
+frs3 <- frs2[,.(Plot_bexis,Plot,Species,value,type,DataID,Year,Dataversion)]
+tr3 <- frs2[,.(Species,Group_broad,Group_fine,Trophic_level,Fun_group_broad,Fun_group_fine)]
+length(unique(tr3$Species))
+dim(unique(tr3)) #some species are duplicated?
+tr3 <- unique(tr3)
+toRemove <- tr3[duplicated(tr3$Species)] 
+#tr3[Species=="Corvus_corax"]
 
+
+summary(factor(tr3$Trophic_level))
+
+#reorder column names in frs
+setcolorder(frs3,c("Plot_bexis","Plot","Species","value","type","Year","DataID","Dataversion"))
+
+#all good: save
+fwrite(frs3,"N:/Exploratories/Data/FORESTS/211118_EP_species_diversity_forests_Margot.txt",row.names=F,quote=F,sep=";",na=NA)
+fwrite(tr3,"N:/Exploratories/Data/FORESTS/211118_EP_species_info_forests_Margot.txt",row.names=F,quote=F,sep=";",na=NA)
 
 
 
