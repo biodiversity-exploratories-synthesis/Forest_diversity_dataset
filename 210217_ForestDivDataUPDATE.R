@@ -24,13 +24,13 @@
 # 16. Add NAs for missing plots in micromammals
 # 17. Update bat datasets, add 2008
 # 18. Homogenise trophic group names to match grasslands
-# 19. Create a version column
+#TODO 19. Create a version column
 
-#TODO x. Homogenise trophic group names --> update at the end
-#TODO x. Create a column with data versions --> update at the end
 
 #TODO update metadata / manual
 ### Add to metadata ###
+
+#Fun_group_fine these names are very heterogeneous, they make sense coupled with Fun_group_broad
 
 #This dataset is mostly about understorey and belowground
 
@@ -372,7 +372,7 @@ setnames(bac, c("Sequence_variant","Read_count","Plot_ID","kingdom"),
 
 # add columns and info on trophic level etc.
 bac$type <- "OTU_number"
-bac$Group_broad <- bac$Trophic_level <- bac$Fun_group_broad <- bac$Fun_group_fine <- "bacteria.RNA"
+bac$Group_broad <- bac$Trophic_level <- bac$Fun_group_broad <- bac$Fun_group_fine <- "Bacteria.RNA"
 
 # check if two OTUs have same "name" but different taxonomy
 temp<-unique(bac, by=c("Species","Group_fine"))
@@ -440,7 +440,7 @@ summary(as.factor(finfo$Trophic_level))
 finfo$Fun_group_broad<-finfo$Trophic_level #Fun_group_broad
 setnames(finfo,"Guild","Fun_group_fine") #Fun_group_fine
 setnames(finfo,"Phylum","Group_fine") #Group_fine
-finfo$Group_broad<-"soilfungi" #Group_broad
+finfo$Group_broad<-"Soilfungi" #Group_broad
 finfo[,c("Class","Order","Family","Genus","Species","Probability","TrophicMode"):=NULL]
 
 # Merge info and raw data
@@ -539,10 +539,10 @@ ew <- data.table(BEplotZeros(ew,"Plot_bexis","Plot")) # add plot zero
 ew$type <- "abundance" #type
 ew$DataID <- "21687" #DataID
 ew$Year <- 2011 #year
-ew$Group_broad <- "earthworm" #Group_broad
+ew$Group_broad <- "Earthworm" #Group_broad
 ew$Group_fine <- "Lumbricidae" #Group_fine
 ew$Trophic_level <- "decomposer.earthworm" #Trophic_level
-ew$Fun_group_broad <- ew$Fun_group_fine <- "decomposer" #Fun_group_broad and Fun_group_fine
+ew$Fun_group_broad <- ew$Fun_group_fine <- "decomposer.earthworm" #Fun_group_broad and Fun_group_fine
 
 # add to main dataset
 frs2<-rbindlist(list(frs2,ew), use.names = T)
@@ -630,7 +630,7 @@ oldbi <- unique(oldbi[,.(Species, Group_broad, Group_fine, Trophic_level,
 setdiff(unique(newbi$Species), oldbi$Species) #no new species
 setdiff(oldbi$Species, unique(newbi$Species)) #6 species less in new dataset
 
-############# 2018 dataset #############
+##### 2018 dataset
 bird <- fread("Exploratories/Data/FORESTS/Update2021/25306.txt")
 bird <- bird[type=="forest"] #only forests
 # Checks and data cleaning
@@ -781,10 +781,6 @@ rm(bi8, bi9, bi10, bi11, bi12, newbi, newbi2, birdinfo, bird, bibi, newbi3, newb
 
 #10. Update plant dataset 30909######################################################
 
-#TODO: did I put hew2 and 51 everywhere for plants?
-
-
-
 # Remove old plant dataset and replace by new one: ID 30909
 plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_5_data.txt")
 
@@ -848,11 +844,20 @@ plantagg$type <- "cover"
 # newpl <- merge(newpl, oldpl, by="Species", all.x=T)
 # # write table and fill manually
 # write.table(newpl, "Exploratories/Data/FORESTS/Update2021/plant_species_update21.txt", row.names = F)
-rm(oldpl)
+# rm(oldpl)
 newpl <- fread("Exploratories/Data/FORESTS/Update2021/plant_species_update21.txt", h=T)
 
 # Merge
 plantagg <- merge(plantagg, newpl, by="Species")
+
+# Check HEW2 and HEW51
+unique(plantagg[Plot=="HEW02"]$Year) #all years
+unique(plantagg[Plot=="HEW51"]$Year) #all years
+
+summary(plantagg[Plot=="HEW02" & Year<2017]$value) #no NAs
+summary(plantagg[Plot=="HEW02" & Year>2017]$value) #all NAs
+summary(plantagg[Plot=="HEW51" & Year<2017]$value) #all NAs
+summary(plantagg[Plot=="HEW51" & Year>2017]$value) #no NAs
 
 # Remove old plant dataset and add new one
 frs2 <- frs2[!Group_broad == "plant"]
@@ -970,7 +975,7 @@ prot[,(8:13):=NULL]
 
 # Add "Group_broad"     "Group_fine"      "Fun_group_broad" "Fun_group_fine" 
 unique(frs2$Group_broad)
-prot$Group_broad <- "Protists"
+prot$Group_broad <- "Protist"
 unique(frs2$Group_fine)
 
 setnames(prot,"Phylum","Group_fine")
@@ -1017,7 +1022,7 @@ length(unique(protoo[Year=="2017"]$Plot_bexis)) #150
 
 #### Prepare species info table
 # Add Group broad and Group fine
-proinf$Group_broad <- "Protists_oomycota"
+proinf$Group_broad <- "Protist.oomycota"
 unique(proinf$Order)
 setnames(proinf, "Order", "Group_fine")
 
@@ -1245,8 +1250,8 @@ rm(mm, mm2); gc()
 # 2008 is missing from forest dataset
 
 #any difference between old and new?
-old09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/TEXTfiles/bats/13146_Bats2009.txt")
-new09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
+old09 <- fread("Exploratories/Data/FORESTS/TEXTfiles/bats/13146_Bats2009.txt")
+new09 <- fread("Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
 #yes, there is one more sp in new dataset (Eptesiscus nilsonii)
 #species richness
 old09$rich <- rowSums(old09[,3:13]!=0)
@@ -1256,8 +1261,8 @@ plot(rich.x~rich.y, data=rich09)
 cor.test(rich09$rich.x, rich09$rich.y) #0.97
 rm(old09, rich09)
 
-old10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/TEXTfiles/bats/13526_Bats2010.txt")
-new10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
+old10 <- fread("Exploratories/Data/FORESTS/TEXTfiles/bats/13526_Bats2010.txt")
+new10 <- fread("Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
 #yes, there is one more sp in new dataset (Eptesiscus nilsonii)
 #species richness
 old10$rich <- rowSums(old10[,3:13]!=0)
@@ -1268,9 +1273,9 @@ cor.test(rich10$rich.x, rich10$rich.y) #0.98
 rm(old10, rich10)
 
 # merge datasets fom 2008, 2009 and 2010
-new08 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19848_2_data.txt")
-new09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
-new10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
+new08 <- fread("Exploratories/Data/FORESTS/Update2021/19848_2_data.txt")
+new09 <- fread("Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
+new10 <- fread("Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
 
 all.equal(names(new08), names(new09), names(new10)) #all equal, merge is straightforward
 
@@ -1331,94 +1336,54 @@ frs2 <- rbindlist(list(frs2, newbats), use.names = T)
 rm(newbats, oldbats, new08, new09, new10); gc()
 ####################################################################################
 
-
-
-#x. Example header #################################################################
-####################################################################################
-
-
-
 #18. Homogenise trophic group names #################################################
 # This will match better with the grassland dataset
-trG <- fread("Exploratories/Data/GRASSLANDS/190218_EP_species_info_GRL.txt")
-unique(trG$Group_broad)
-unique(tr$Group_broad)
-tr[Group_broad == "arthropod", Group_broad:= "Arthropod"]
-tr[Group_broad == "plant", Group_broad:= "Plant"]
-tr[Group_broad == "fungi.deadw", Group_broad:= "Fungi.deadw"]
-tr[Group_broad == "lichen", Group_broad:= "Lichen"]
-tr[Group_broad == "bryophyte", Group_broad:= "Bryophyte"] #the grl dataset has "Moss" but bryo is better
-tr[Group_broad == "micromammal", Group_broad:= "Micromammal"]
-tr[Group_broad == "bat", Group_broad:= "Bat"] #the grl dataset has Bats but this is more conisitent
-tr[Group_broad == "fungi.root.soil", Group_broad:= "SoilFungi.roots"]
-tr[Group_broad == "bacteria", Group_broad:= "Bacteria"]
+trG <- fread("Exploratories/Data/GRASSLANDS/210112_EP_species_info_GRL_BEXIS.txt")
+sort(unique(trG$Group_broad))
+sort(unique(frs2$Group_broad))
+frs2[Group_broad == "arthropod", Group_broad:= "Arthropod"]
+frs2[Group_broad == "bat", Group_broad:= "Bat"] #the grl dataset has Bats but this is more conisitent
+frs2[Group_broad == "bird", Group_broad:= "Birds"] #the grl dataset has Birds but this is more conisitent
+frs2[Group_broad == "bryophyte", Group_broad:= "Bryophyte"] #the grl dataset has "Moss" but bryo is better
+frs2[Group_broad == "fungi.deadw", Group_broad:= "Fungi.deadw"]
+frs2[Group_broad == "lichen", Group_broad:= "Lichen"]
+frs2[Group_broad == "micromammal", Group_broad:= "Micromammal"]
+frs2[Group_broad == "nematode", Group_broad:= "Nematode"]
+frs2[Group_broad == "plant", Group_broad:= "Plant"]
 
-#TODO: same with other groups
+sort(unique(trG$Group_fine))
+sort(unique(frs2$Group_fine))
+frs2[Group_fine == "nematode", Group_fine:= "Nematode"]
 
-unique(frs2$Trophic_level)
-unique(frs2$Group_broad)
+sort(unique(trG$Trophic_level))
+sort(unique(frs2$Trophic_level)) #all good here
 
-rm(trG)
+sort(unique(trG$Fun_group_broad))
+sort(unique(frs2$Fun_group_broad))
+unique(frs2[Fun_group_broad=="omnivore"]$Group_broad) #"micromammal"
+unique(frs2[Fun_group_broad=="Omnivore"]$Group_broad) #"arthropod"
+frs2[Fun_group_broad == "omnivore", Fun_group_broad:= "omnivore.micromammal"]
+frs2[Fun_group_broad == "chewing herbivore", Fun_group_broad:= "chewing.herbivore"]
+frs2[Fun_group_broad == "carnivore", Fun_group_broad:= "carnivore.arthropod"]
+frs2[Fun_group_broad == "decomposer", Fun_group_broad:= "decomposer.arthropod"]
+frs2[Fun_group_broad == "Omnivore", Fun_group_broad:= "omnivore.arthropod"]
+frs2[Fun_group_broad == "pollinator", Fun_group_broad:= "pollinator.arthropod"]
+frs2[Fun_group_broad == "extraintestinal", Fun_group_broad:= "extraintestinal.arthropod"]
+
+sort(unique(trG$Fun_group_fine))
+sort(unique(frs2$Fun_group_fine)) #these are very heterogeneous, they make sense coupled with Fun_group_broad
+
+rm(trG); gc()
 ####################################################################################
-
-
-
-
-
-
 
 #19. Create a version column ##########################
 sort(as.numeric(unique(frs2$DataID)))
-# version 2: 4141  4460 10300 10301 16866 16867 16868  16886 16887 16906 17186 18547
-#            19849 19850
-# version 3: 16869
-# version 4: 
 
-# not in bexis, to check: 15187 15188 15189 15190 19848
-# 21687 24426 24466 24690 24868 24986 25067 25306 25766 25767 26026 26467
-# 26468 26469 26569 30909
-
-# to check birds IDs (in bexis but not new) 21446 21447 21448
-
-old dataset IDs: "15187" "15188" "15189" "15190" "24690"
-
-# in Bexis2 most dataversions are 2
+# in Bexis2 most dataversions are 2 (all IDs checked by hand in BExIS)
 frs2$Dataversion <- 2
-frs2[DataID==4141, Dataversion:="2"]; frs2[DataID==4460, Dataversion:="2"]
-
-
-
-
-frs2[DataID==13146, Dataversion:="1.1.7"]; frs2[DataID==13526, Dataversion:="1.2.3"]
-frs2[DataID==15187, Dataversion:="2.1.3"]; frs2[DataID==15188, Dataversion:="2.1.2"]
-frs2[DataID==15189, Dataversion:="2.1.3"]; frs2[DataID==15190, Dataversion:="3.1.4"]
-frs2[DataID==16866, Dataversion:="1.1.3"]; frs2[DataID==16867, Dataversion:="1.1.4"]
-frs2[DataID==16868, Dataversion:="1.1.3"]; frs2[DataID==16869, Dataversion:="1.1.4"]
-frs2[DataID==16886, Dataversion:="1.1.2"]; frs2[DataID==16887, Dataversion:="1.1.2"]
-frs2[DataID==16906, Dataversion:="1.1.1"]; frs2[DataID==17186, Dataversion:="2.1.0"]
-frs2[DataID==18547, Dataversion:="1.1.0"]; 
- 
-frs2[DataID==24690, Dataversion:="4.1.2"] #bird dataset
-frs2[DataID==24868, Dataversion:="2"]; frs2[DataID==25067, Dataversion:="2"] #bacteria
-frs2[DataID==26569, Dataversion:="2"];
-frs2[DataID==24986, Dataversion:="1.3.9"] #snails
-frs2[DataID==21906, Dataversion:="2"] #ants
-frs2[DataID==25306, Dataversion:="1.0.0"] #birds
-
-
-#continue here:
-frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
-frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
-#will be added
-#21687_Earthworm community 2011 all forest EPs_1.1.7
-#26467_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2011; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
-#26468_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2014; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.2
-#26469_Abundant soil fungi on all 150 forest EPs (from Soil Sampling Campain 2017; Illumina MiSeq) - ASV abundances (zero-radius OTUs)_1.1.1
-#plants: 30909_5_Dataset version 5
-#moth: version 2
-#nematodes: NA
-#19849, 19849, 19850 - version2 
-
+frs2[DataID %in% c("16869", "24426", "24466"), Dataversion:=3]
+frs2[DataID %in% c("30909"), Dataversion:=5]
+frs2[is.na(DataID), Dataversion:=NA] #nematodes
 ####################################################################################
 
 #TODO
@@ -1426,11 +1391,9 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 frs3 <- frs2[,.(Plot_bexis,Plot,Species,value,type,DataID,Year,Dataversion)]
 tr3 <- frs2[,.(Species,Group_broad,Group_fine,Trophic_level,Fun_group_broad,Fun_group_fine)]
 length(unique(tr3$Species))
-dim(unique(tr3)) #some species are duplicated?
+dim(unique(tr3)) #some species are duplicated? --> no
 tr3 <- unique(tr3)
-toRemove <- tr3[duplicated(tr3$Species)] 
-#tr3[Species=="Corvus_corax"]
-
+#toRemove <- tr3[duplicated(tr3$Species)] 
 
 summary(factor(tr3$Trophic_level))
 
