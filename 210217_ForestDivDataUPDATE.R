@@ -5,16 +5,16 @@
 ############################################################################
 
 # This update applies the following changes:
-# 1. Homogenize trophic level names as in grasslands dataset
-# 2. Check zeros and NAs issues
-# 3. Explore issue in Group_fine and Fun_group_fine (arthropods)
-# 4. Remove and add arthropods + add DataID (see point 4)
-# 5. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
-# 6. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
-#    and 26473 (species table))
-# 7. Add snails: dataset 24986
-# 8. Add earthworms: dataset 21687
-# 9. Add birds 2018: dataset 25306
+# 1.  Homogenize trophic level names as in grasslands dataset
+# 2.  Check zeros and NAs issues
+# 3.  Explore issue in Group_fine and Fun_group_fine (arthropods)
+# 4.  Remove and add arthropods + add DataID (see point 4)
+# 5.  Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
+# 6.  Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
+#     and 26473 (species table))
+# 7.  Add snails: dataset 24986
+# 8.  Add earthworms: dataset 21687
+# 9.  Update birds all years + add 2018 (dataset 25306)
 # 10. Update plant dataset (add more recent years: ID 30909)
 # 11. Add protists Cercozoa and Oomycota
 # 12. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
@@ -26,7 +26,6 @@
 # 18. Homogenise trophic group names to match grasslands
 # 19. Create a version column
 
-#TODO: finish bird check
 #TODO x. Homogenise trophic group names --> update at the end
 #TODO x. Create a column with data versions --> update at the end
 
@@ -198,6 +197,7 @@ tt <- frs2[Group_broad=="micromammal"] #126 plots --> need to add NAs
 
 #merge again with data
 frs2<-merge(frs,tr,by="Species")
+rm(tt)
 ####################################################################################
 
 #3. Explore issue in Group_fine and Fun_group_fine  ################################
@@ -584,11 +584,11 @@ rm(ew); gc()
 ## -> remove all birds and add them back..
 
 ## read new bird datasets
-bi8 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21446.txt")
-bi9 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21447.txt")
-bi10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21448.txt")
-bi11 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21449.txt")
-bi12 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/24690.txt")
+bi8 <- fread("Exploratories/Data/FORESTS/Update2021/21446.txt")
+bi9 <- fread("Exploratories/Data/FORESTS/Update2021/21447.txt")
+bi10 <- fread("Exploratories/Data/FORESTS/Update2021/21448.txt")
+bi11 <- fread("Exploratories/Data/FORESTS/Update2021/21449.txt")
+bi12 <- fread("Exploratories/Data/FORESTS/Update2021/24690.txt")
 bi12$GermanName <- bi12$Date <- NULL
 bi12$Year <- 2012
 
@@ -629,11 +629,6 @@ oldbi <- unique(oldbi[,.(Species, Group_broad, Group_fine, Trophic_level,
 #any species names differences?
 setdiff(unique(newbi$Species), oldbi$Species) #no new species
 setdiff(oldbi$Species, unique(newbi$Species)) #6 species less in new dataset
-
-#merge trophic info
-
-
-rm(bi8, bi9, bi10, bi11, bi12)
 
 ############# 2018 dataset #############
 bird <- fread("Exploratories/Data/FORESTS/Update2021/25306.txt")
@@ -710,7 +705,7 @@ bird[Species=="Corvus_cornix", Species:="Corvus_corone_cornix"]
 bird[Species=="Regulus_ignicapilla",Species:="Regulus_ignicapillus"]
 bird[Species=="Parus_ater",Species:="Periparus_ater"]
 bird[Species=="Parus_caeruleus",Species:="Cyanistes_caeruleus"]
-# one species is really new: "Accipiter_nisus"
+# one species is really "new": "Accipiter_nisus"
 
 
 ## Merge Jung and Teuscher datasets
@@ -724,85 +719,63 @@ newbi2 <- setDT(newbi2)[CJ(Species=Species, Plot_bexis=Plot_bexis,
                          Year=Year, unique=T), 
                       on=.(Species, Plot_bexis, Year)]
 #replace NAs by zeros except for SEW22 in 2012
-newbi2[is.na(value), value := ifelse((Plot_ID == "SEW22" & Year == 2012), NA, 0)] 
+newbi2[is.na(value), value := ifelse((Plot_bexis == "SEW22" & Year == 2012), NA, 0)] 
 
 
+#merge trophic info from old dataset
+newbi2 <- merge(newbi2, oldbi, by="Species", all.x=T)
+unique(newbi2[is.na(Trophic_level)]$Species) # "Accipiter_nisus" misses info
 
-#rename and arrange
-setnames(bird, names(bird), c("Species","Fun_group_fine","Plot_bexis","value")) #rename to match main table
-bird <- data.table(BEplotZeros(bird,"Plot_bexis",plotnam = "Plot")) #add plotzero
-bird$type <- "abundance"; bird$DataID <- 25306; bird$Year <- 2018 #add metadata
-bird$Group_broad <- "bird"; bird$Group_fine <- "Bird"
+#add species with missing information
+birdinfo <- fread("Exploratories/Data/FORESTS/Update2021/25306.txt")
+birdinfo[species_latin=="Accipiter_nisus"]
+newbi2[Species=="Accipiter_nisus", Group_broad:="bird"]
+newbi2[Species=="Accipiter_nisus", Group_fine:="Bird"]
+newbi2[Species=="Accipiter_nisus", Trophic_level:="tertiary.consumer.birdbat"]
+newbi2[Species=="Accipiter_nisus", Fun_group_broad:="vert.predator"]
+newbi2[Species=="Accipiter_nisus", Fun_group_fine:="carnivore"]
 
+#add columns to match main dataset
+setdiff(names(frs2), names(newbi2))
+newbi2 <- data.table(BEplotZeros(newbi2, "Plot_bexis", "Plot")) #Plot names with zeros
+newbi2$type <- "abundance"
+newbi2[Year==2008, DataID:=21446]
+newbi2[Year==2009, DataID:=21447]
+newbi2[Year==2010, DataID:=21448]
+newbi2[Year==2011, DataID:=21449]
+newbi2[Year==2012, DataID:=24690]
+newbi2[Year==2018, DataID:=25306]
 
-
-#harmonize Fun_group_fine
-unique(bird$Fun_group_fine)
-unique(frs2[Group_broad=="bird"]$Fun_group_fine)
-bird[Fun_group_fine=="Omnivore", Fun_group_fine:="omnivore"]
-bird[Fun_group_fine=="Invertebrate", Fun_group_fine:="insectivore"]
-bird[Fun_group_fine=="PlantSeed", Fun_group_fine:="granivore"] 
-bird[Fun_group_fine=="VertFishScav", Fun_group_fine:="carnivore"]
-
-#some species have different trophic categories in both datasets, keep old ones
-bird[Species=="Corvus_corax", Fun_group_fine:="omnivore"]
-bird[Species=="Corvus_corone_cornix", Fun_group_fine:="omnivore"]
-bird[Species=="Corvus_corone_corone", Fun_group_fine:="omnivore"]
-bird[Species=="Cyanistes_caeruleus", Fun_group_fine:="insectivore"]
-bird[Species=="Dendrocopos_major", Fun_group_fine:="insectivore"]
-bird[Species=="Erithacus_rubecula", Fun_group_fine:="insectivore"]
-bird[Species=="Fringilla_coelebs", Fun_group_fine:="granivore"]
-bird[Species=="Grus_grus", Fun_group_fine:="omnivore"]
-bird[Species=="Oriolus_oriolus", Fun_group_fine:="insectivore"]
-bird[Species=="Parus_major", Fun_group_fine:="insectivore"]
-bird[Species=="Parus_palustris", Fun_group_fine:="insectivore"]
-bird[Species=="Periparus_ater", Fun_group_fine:="insectivore"]
-bird[Species=="Prunella_modularis", Fun_group_fine:="insectivore"]
-bird[Species=="Sturnus_vulgaris", Fun_group_fine:="insectivore"]
-bird[Species=="Sylvia_atricapilla", Fun_group_fine:="insectivore"]
-bird[Species=="Turdus_merula", Fun_group_fine:="insectivore"]
-bird[Species=="Turdus_philomelos", Fun_group_fine:="insectivore"]
-bird[Species=="Turdus_viscivorus", Fun_group_fine:="insectivore"]
-
-# create Group_broad and Fun_group_broad
-unique(frs2[Group_broad=="bird"]$Fun_group_broad)
-bird$Fun_group_broad <- "vert.predator"
-bird[Fun_group_fine %in% c("grazer","granivore"), Fun_group_broad:="vert.herb"]
-
-unique(frs2[Group_broad=="bird"]$Trophic_level)
-bird$Trophic_level<-"tertiary.consumer.birdbat"
-bird[Fun_group_broad=="vert.herb",Trophic_level:="herbivore.bird"]
-
-# create "zero dataset" for all species that are not in the 2018 dataset
-oldbi <- sort(setdiff(unique(frs2[Group_broad=="bird"]$Species), unique(bird$Species))) #those need zeros in 2018 (47 species)
-oldbi <- frs2[Species %in% oldbi & Year=="2008"] #select only one year
-oldbi$Year <- 2018
-oldbi$value <- 0
-oldbi$DataID <- "25306"
-150 * 47 #150 plots and 47 species = 7050 occurrences (dimension of oldbird dataset)
-150 * 54 #dimension of bird dataset = 8100 occurrences (dimension of bird dataset)
-
+### Checks
+summary(newbi2)
+apply(newbi2, 2, function(x)sum(is.na(x))) #ok
 # check hew51
-sort(unique(bird$Plot))
+sort(unique(newbi2$Plot))
+length(unique(newbi2$Plot_bexis))*length(unique(newbi2$Species))*length(unique(newbi2$Year)) == dim(newbi2)[1]
 
-# add to main dataset
-setdiff(names(bird), names(frs2))
-frs2 <- rbindlist(list(frs2, bird, oldbi), use.names=TRUE)
+#check richness correlation old/new
+newbi3 <- copy(newbi2)
+newbi3[,rich:=sum(value>1), by=c("Plot", "Year")]
+newbiR <- dcast.data.table(unique(newbi3[,.(Plot, Year, rich)]), Plot ~ Year)
 
-# backward checks
-# checkbi <- frs22[Group_broad=="bird"] #90 900
-# length(unique(checkbi$Species)) * length(unique(checkbi$Year)) * length(unique(checkbi$Plot)) #91 506
-# length(unique(checkbi$Species)) * length(unique(checkbi$Year)) * 150 #ok, the difference is due to HEW51
-# checkbi2 <- setDT(checkbi)[CJ(Species=Species, Plot_bexis=Plot_bexis, Year=Year, unique=T), 
-#                            on=.(Species, Plot_bexis, Year)]
-# checkbi2 <- checkbi2[is.na(Plot)]
-# frs2[Species=="Accipiter_gentilis"]
-# frs2[Species=="Accipiter_gentilis" & Plot_bexis=="HEW51"]
-# sort(unique(checkbi[is.na(value)]$Species))
-# sort(unique(checkbi$Species))
-# sort(unique(bird$Species))
+bibi <- frs2[Group_broad=="bird"]
+bibi[,rich:=sum(value>1), by=c("Plot", "Year")]
+bibiR <- dcast.data.table(unique(bibi[,.(Plot, Year, rich)]), Plot ~ Year)
 
-rm(allbirdtr,birdtr,bird,newsp,birdc,allpl,checkbi,newbioldy,oldbi,yearver,newbi); gc()
+newbiR <- merge(newbiR, bibiR, by="Plot")
+ 
+plot(newbiR$`2008.x`, newbiR$`2008.y`, main = cor.test(newbiR$`2008.x`, newbiR$`2008.y`)$estimate) #0.58
+plot(newbiR$`2009.x`, newbiR$`2009.y`, main = cor.test(newbiR$`2009.x`, newbiR$`2009.y`)$estimate) #0.49
+plot(newbiR$`2010.x`, newbiR$`2010.y`, main = cor.test(newbiR$`2010.x`, newbiR$`2010.y`)$estimate) #0.73
+plot(newbiR$`2011.x`, newbiR$`2011.y`, main = cor.test(newbiR$`2011.x`, newbiR$`2011.y`)$estimate) #0.78
+plot(newbiR$`2012.x`, newbiR$`2012.y`, main = cor.test(newbiR$`2012.x`, newbiR$`2012.y`)$estimate) #0.58
+#not so high correlations -> potential differences new/old results
+
+# Remove old plant dataset and add new one
+frs2 <- frs2[!Group_broad == "bird"]
+frs2 <- rbindlist(list(frs2, newbi2), use.names = T)
+
+rm(bi8, bi9, bi10, bi11, bi12, newbi, newbi2, birdinfo, bird, bibi, newbi3, newbiR, bibiR, oldbi); gc()
 ####################################################################################
 
 
