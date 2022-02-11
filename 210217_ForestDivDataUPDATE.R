@@ -1,4 +1,4 @@
-########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY 2021 ##########
+########## UPDATE SYNTHESIS DATASET FOREST DIVERSITY 2022 ##########
 # Changes from version with DataID: 24607 and 24608 to ??
 # Script by: Caterina Penone, University of Bern
 # March - November 2021
@@ -6,31 +6,31 @@
 
 # This update applies the following changes:
 # 1. Homogenize trophic level names as in grasslands dataset
-# x. Check zeros and NAs issues
-# x. Explore issue in Group_fine and Fun_group_fine (arthropods)
-# x. Remove and add arthropods + add DataID (see point 4)
-# x. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
-# x. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
+# 2. Check zeros and NAs issues
+# 3. Explore issue in Group_fine and Fun_group_fine (arthropods)
+# 4. Remove and add arthropods + add DataID (see point 4)
+# 5. Update bacteria dataset (new sequencing: 4868 (2011), 25067 (2014), 26569 (2017))
+# 6. Update soil fungi dataset (new sequencing: 26467 (2011), 26469 (2014), 26469 (2017),
 #    and 26473 (species table))
-# x. Add snails: dataset 24986
-# x. Add earthworms: dataset 21687
-# x. Add birds 2018: dataset 25306
-# x. Add protists Cercozoa and Oomycota
-# x. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
-# x. Update plant dataset (add more recent years: ID 30909)
-# x. Add nematodes dataset (received directly from L.Ruess)
-# x. Fix species names with multiple underscores or underscores at the end
-# x. Change years to "2007_2008" lichens and mosses
-# x. Add NAs for missing plots in micromammals
+# 7. Add snails: dataset 24986
+# 8. Add earthworms: dataset 21687
+# 9. Add birds 2018: dataset 25306
+# 10. Update plant dataset (add more recent years: ID 30909)
+# 11. Add protists Cercozoa and Oomycota
+# 12. Add moth abundance from lighttrapping on all grassland and forest plots (26026)
+# 13. Add nematodes dataset (received directly from L.Ruess)
+# 14. Fix species names with multiple underscores or underscores at the end
+# 15. Change years to "2007_2008" lichens and mosses
+# 16. Add NAs for missing plots in micromammals
+# 17. Update bat datasets, add 2008
+# 18. Homogenise trophic group names to match grasslands
+# 19. Create a version column
 
-#TODO add AMF?
-#TODO fungi deadwood they come from two datasets --> do something to differentiate?
-#TODO: check if update in bats is needed
-
+#TODO: finish bird check
 #TODO x. Homogenise trophic group names --> update at the end
 #TODO x. Create a column with data versions --> update at the end
 
-#TODO
+#TODO update metadata / manual
 ### Add to metadata ###
 
 #This dataset is mostly about understorey and belowground
@@ -52,6 +52,7 @@
 #ants dataset 21906: ants were sampled monthly, samples are aggregated
 
 #nematodes are at family level
+
 
 
 #lichens dataset --> ok, data come from 2 different years
@@ -79,7 +80,14 @@
 # 30973: Abundant of root-associated fungi from the organic layer and mineral soil across 150 forest experimental plots (soil sampling campaign, 2017) - OTU taxonomic look-up table
 # 30974: Abundant of root-associated fungi from organic layer and mineral soil across 150 forest experimental plots (soil sampling campaign, 2017)
 
-
+#TODO fungi deadwood they come from two datasets --> do something to differentiate?
+# unique(frs2$Group_broad)
+# frs2[Group_broad == "fungi.deadw"]
+# unique(frs2[Group_broad == "fungi.deadw"]$DataID)
+# length(unique(frs2[DataID==17186]$Plot))
+# Dataset 17186 is from 2011, has abundance but only 120 plots!
+# Dataset 18547 is from 2010, has presence-absencce and 150 plots
+# The mehtods are different!
 
 
 require(data.table) #to manage large datasets
@@ -146,7 +154,7 @@ sum(is.na(tr$Group_broad)) #all species have information
 frs2 <- merge(frs,tr,by="Species")
 ####################################################################################
 
-#x. Check zeros or NA issues #######################################################
+#2. Check zeros or NA issues #######################################################
 unique(frs$DataID)
 for (i in unique(frs$DataID)){
   tt <- frs[DataID==i]
@@ -192,7 +200,7 @@ tt <- frs2[Group_broad=="micromammal"] #126 plots --> need to add NAs
 frs2<-merge(frs,tr,by="Species")
 ####################################################################################
 
-#x. Explore issue in Group_fine and Fun_group_fine  ################################
+#3. Explore issue in Group_fine and Fun_group_fine  ################################
 unique(frs2$DataID)
 unique(frs2[DataID=="arth"]$Trophic_level)
 # "secondary.consumer.arthropod" "decomposer.arthropod"         "herbivore.arthropod"         
@@ -232,7 +240,7 @@ rm(arthtr)
 ####################################################################################
 
 
-#x. Remove and add arthropods + add DataID #########################################
+#4. Remove and add arthropods + add DataID #########################################
 # read species abundances (data coming from script 190215_DataCleaningFOR.R)
 arth <- fread("Exploratories/Data/FORESTS/TEXTfiles/all_arthropodsLYR2.txt")
 
@@ -310,7 +318,7 @@ rm(atl, arth); gc()
 frs2<-merge(frs, tr, by="Species")
 ####################################################################################
 
-#x. Update bacteria datasets #######################################################
+#5. Update bacteria datasets #######################################################
 # Remove old datasets and replace by: 24868 (2011), 25067 (2014), 26569 (2017)
 # This is RNA (not DNA as before)
 # HEW04 is missing and can not be recovered --> add in metadata
@@ -380,11 +388,10 @@ setdiff(names(bac), names(frs2))
 # rbind new data with main dataset
 frs2 <- rbindlist(list(frs2, bac), use.names=T)
 rm(bac, b11, b14, b17); gc()
-
 ####################################################################################
 
 
-#x. Update soil fungi datasets #####################################################
+#6. Update soil fungi datasets #####################################################
 # Remove old datasets and replace by: 26467 (2011), 26468 (2014), 26469 (2017) and 
 # 26473 (species table)
 
@@ -447,10 +454,9 @@ frs2 <- frs2[!Group_broad %in% c("fungi.root.soil")]
 
 frs2<-rbindlist(list(frs2, soilf), use.names=T)
 rm(soilf,finfo); gc()
-
 ####################################################################################
 
-#x. Add snail dataset ##############################################################
+#7. Add snail dataset ##############################################################
 snail <- fread("Exploratories/Data/FORESTS/Update2021/24986.txt")
 # select forests
 snail <- snail[Habitat=="FOR"]
@@ -516,7 +522,7 @@ rm(snail, foods, plotstoadd); gc()
 ###################################################################################
 
 
-#x. Add earthworm dataset #########################################################
+#8. Add earthworm dataset #########################################################
 # Read dataset 21687_Earthworm community 2011 all forest EPs_1.1.7
 ew <- fread("Exploratories/Data/FORESTS/Update2021/21687.txt")
 length(unique(ew$EP)) * length(unique(ew$Species)) #dimension is correct 150 plots and 18 species
@@ -541,14 +547,97 @@ ew$Fun_group_broad <- ew$Fun_group_fine <- "decomposer" #Fun_group_broad and Fun
 # add to main dataset
 frs2<-rbindlist(list(frs2,ew), use.names = T)
 rm(ew); gc()
-
 ####################################################################################
 
 
-#x. Add birds #####################################################################
+#9. Update birds all years + add 2018 ##############################################
+# Bird dataID have changed -> check if raw data has also changed
+# old dataset IDs: "15187" "15188" "15189" "15190" "24690"
+# new dataset IDs: 21446, 21447, 21448, 21449, 24690
+# bibi <- frs2[Group_broad=="bird"]
+# bibi[,rich:=sum(value>1), by=c("Plot_bexis", "Year")]
+# bibiR <- dcast.data.table(unique(bibi[,.(Plot_bexis, Year, rich)]), Plot_bexis ~ Year)
+# 
+# bi8 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21446.txt")
+# bi9 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21447.txt")
+# bi10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21448.txt")
+# bi11 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21449.txt")
+# bi12 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/24690.txt")
+# bi12$GermanName <- bi12$Date <- NULL
+# bi12$Year <- 2012
+# 
+# newbi <- rbindlist(list(bi8,bi9,bi10,bi11,bi12), use.names = T)
+# newbi[,rich:=sum(Data>1), by=c("Plot_ID", "Year")]
+# newbiR <- dcast.data.table(unique(newbi[,.(Plot_ID, Year, rich)]), Plot_ID ~ Year)
+# 
+# #remove grassland plots
+# newbiR <- newbiR[!grepl("G", newbiR$Plot_ID)]
+# newbiR <- merge(newbiR, bibiR, by.x="Plot_ID", by.y="Plot_bexis")
+# 
+# plot(newbiR$`2008.x`, newbiR$`2008.y`, main = cor.test(newbiR$`2008.x`, newbiR$`2008.y`)$estimate)
+# plot(newbiR$`2009.x`, newbiR$`2009.y`, main = cor.test(newbiR$`2009.x`, newbiR$`2009.y`)$estimate)
+# plot(newbiR$`2010.x`, newbiR$`2010.y`, main = cor.test(newbiR$`2010.x`, newbiR$`2010.y`)$estimate)
+# plot(newbiR$`2011.x`, newbiR$`2011.y`, main = cor.test(newbiR$`2011.x`, newbiR$`2011.y`)$estimate)
+# plot(newbiR$`2012.x`, newbiR$`2012.y`, main = cor.test(newbiR$`2012.x`, newbiR$`2012.y`)$estimate)
+
+## -> new datasets are quite different from old for all year except 2010 and maybe 2012
+## -> remove all birds and add them back..
+
+## read new bird datasets
+bi8 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21446.txt")
+bi9 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21447.txt")
+bi10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21448.txt")
+bi11 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/21449.txt")
+bi12 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/24690.txt")
+bi12$GermanName <- bi12$Date <- NULL
+bi12$Year <- 2012
+
+newbi <- rbindlist(list(bi8,bi9,bi10,bi11,bi12), use.names = T)
+#remove grassland plots
+newbi <- newbi[!grepl("G", newbi$Plot_ID)]
+#transform NAs
+newbi <- newbi[Data=="n/a", Data:=NA]
+
+length(unique(newbi$Plot_ID)) #150
+
+# Do all plots have all rounds?
+unique(newbi$Round)
+dim(unique(newbi[,.(Plot_ID,Round)])) #all rounds reported
+
+# Use the maximum of observed individuals over the 5 rounds (as indicated by authors)
+newbi[, value:=max(Data, na.rm = T), by=c("Plot_ID", "SpeciesCode", "Year")]
+newbi <- unique(newbi[,.(Plot_ID, Year, SpeciesCode, value)])
+length(unique(newbi$Plot_ID))*5*length(unique(newbi$SpeciesCode)) # some combinations missing
+
+# Add missing combinations
+newbi[is.na(value)] #SEW22 2012
+newbi <- setDT(newbi)[CJ(SpeciesCode=SpeciesCode, Plot_ID=Plot_ID, 
+                         Year=Year, unique=T), 
+                      on=.(SpeciesCode, Plot_ID, Year)]
+newbi <- newbi[!is.na(SpeciesCode)] #there was an NA in species names (SEW22 2012)
+#replace NAs by zeros except for SEW22 in 2012
+newbi[is.na(value), value := ifelse((Plot_ID == "SEW22" & Year == 2012), NA, 0)] 
+
+#rename columns
+setnames(newbi, names(newbi), c("Plot_bexis", "Year", "Species", "value"))
+
+### add trophic information
+oldbi <- frs2[Group_broad=="bird"]
+oldbi <- unique(oldbi[,.(Species, Group_broad, Group_fine, Trophic_level,
+                         Fun_group_broad, Fun_group_fine)])
+
+#any species names differences?
+setdiff(unique(newbi$Species), oldbi$Species) #no new species
+setdiff(oldbi$Species, unique(newbi$Species)) #6 species less in new dataset
+
+#merge trophic info
+
+
+rm(bi8, bi9, bi10, bi11, bi12)
+
+############# 2018 dataset #############
 bird <- fread("Exploratories/Data/FORESTS/Update2021/25306.txt")
 bird <- bird[type=="forest"] #only forests
-
 # Checks and data cleaning
 length(unique(bird$plot_ID)) #150
 bird <- bird[on_EP==1] #select only birds seen on EPs to match previous datasets
@@ -560,38 +649,84 @@ plround$Exists <- 1
 plroundAll <- CJ(plot_ID = unique(plround$plot_ID),
                  round = unique(plround$round))
 plroundDiff <- merge(plroundAll, plround, by=c("plot_ID", "round"), all=T)
-unique(plroundDiff[is.na(Exists)]$plot_ID) #28 plots!
+unique(plroundDiff[is.na(Exists)]$plot_ID) #28 plots have missing rounds
 table(plroundDiff[is.na(Exists)]$round) #by removing rounds 1 and 3 we can keep 145 plots
 rm(plround, plroundAll, plroundDiff)
 
-# check if richness in different rounds is correlated
-birdRi <- dcast.data.table(bird, plot_ID ~ round, value.var = "abundance", 
-                           fun.aggregate = sum, fill = NA)
-plot(birdRi[,2:6])
-cor(birdRi[,2:6], use="complete.obs") #round1 is badly correlated to the rest but round 3 is ok
-# round 1 has 22 missing plots, so can't stay, round 3 is "safe" to remove
-rm(birdRi)
+#this code was using the average across rounds, but for old datasets the authors
+#suggest to use the max across rounds, I left the code in case we want to go back
 
-# keep most complete rounds
-bird <- bird[!round %in% c(1,3)] #"AEW4"  "AEW45" "HEW32" "SEW10" "SEW15" have missing rounds
+# # check if richness in different rounds is correlated
+# birdRi <- dcast.data.table(bird, plot_ID ~ round, value.var = "abundance", 
+#                            fun.aggregate = sum, fill = NA)
+# plot(birdRi[,2:6])
+# cor(birdRi[,2:6], use="complete.obs") #round1 is badly correlated to the rest but round 3 is ok
+# # round 1 has 22 missing plots, so can't stay, round 3 is "safe" to remove
+# rm(birdRi)
+# 
+# # keep most complete rounds
+# bird <- bird[!round %in% c(1,3)] #"AEW4"  "AEW45" "HEW32" "SEW10" "SEW15" have missing rounds
+# 
+# bird <- bird[,.(plot_ID,species_latin,abundance,diet)] #select only target columns
+# 
+# # Aggregate rounds and add zeros (for species X plots combinations)
+# birdc <- dcast.data.table(bird, species_latin + diet ~ plot_ID, value.var="abundance",
+#                           fill = 0, fun.aggregate = sum) #sum over all rounds
+# 
+# length(unique(bird$species_latin)) * length(unique(bird$plot_ID)) #8100 (54*150)
+# 
+# bird <- melt.data.table(birdc,measure.vars=3:ncol(birdc), variable.name="Plot")
+# 
+# length(unique(bird$Plot)) #150 plots
+# length(unique(bird$species_latin)) #54 species
+# rm(birdc)
+# 
+# # set "AEW4"  "AEW45" "HEW32" "SEW10" "SEW15" to NA because they have missing rounds
+# bird[Plot %in% c("AEW4", "AEW45", "HEW32", "SEW10", "SEW15")]
+# bird[Plot %in% c("AEW4", "AEW45", "HEW32", "SEW10", "SEW15"), value:=NA]
 
-bird <- bird[,.(plot_ID,species_latin,abundance,diet)] #select only target columns
+# Use the maximum of observed individuals over the 5 rounds (as indicated by authors)
+bird[, value:=max(abundance, na.rm = T), by=c("plot_ID", "species_latin")]
+bird <- unique(bird[,.(plot_ID, species_latin, value)])
+length(unique(bird$plot_ID))*length(unique(bird$species_latin)) # some combinations missing
+summary(bird$value) #no zeros reported
 
-# Aggregate rounds and add zeros (for species X plots combinations)
-birdc <- dcast.data.table(bird, species_latin + diet ~ plot_ID, value.var="abundance",
-                          fill = 0, fun.aggregate = sum) #sum over all rounds
+# Add missing combinations
+bird[is.na(value)]
+bird <- setDT(bird)[CJ(species_latin=species_latin, plot_ID=plot_ID, unique=T), 
+                      on=.(species_latin, plot_ID)]
+bird[is.na(value), value := 0] 
 
-length(unique(bird$species_latin)) * length(unique(bird$plot_ID)) #8100 (54*150)
+#rename columns
+setnames(bird, names(bird), c("Plot_bexis", "Species", "value"))
 
-bird <- melt.data.table(birdc,measure.vars=3:ncol(birdc), variable.name="Plot")
+#Harmonise species names (keep the ones that are already in synthesis dataset)
+sort(setdiff(unique(bird$Species), unique(newbi$Species))) # 6 "new" species
+sort(setdiff(unique(newbi$Species), unique(bird$Species))) # 42 old species not present here (=zeros)
 
-length(unique(bird$Plot)) #150 plots
-length(unique(bird$species_latin)) #54 species
-rm(birdc)
+# 5 of the new species are synonyms: fix
+bird[Species=="Corvus_corone", Species:="Corvus_corone_corone"]
+bird[Species=="Corvus_cornix", Species:="Corvus_corone_cornix"]
+bird[Species=="Regulus_ignicapilla",Species:="Regulus_ignicapillus"]
+bird[Species=="Parus_ater",Species:="Periparus_ater"]
+bird[Species=="Parus_caeruleus",Species:="Cyanistes_caeruleus"]
+# one species is really new: "Accipiter_nisus"
 
-# set "AEW4"  "AEW45" "HEW32" "SEW10" "SEW15" to NA because they have missing rounds
-bird[Plot %in% c("AEW4", "AEW45", "HEW32", "SEW10", "SEW15")]
-bird[Plot %in% c("AEW4", "AEW45", "HEW32", "SEW10", "SEW15"), value:=NA]
+
+## Merge Jung and Teuscher datasets
+bird$Year <- 2018
+newbi2 <- rbindlist(list(newbi,bird), use.names = T)
+
+# add missing combinations
+length(unique(newbi2$Plot_bexis))*length(unique(newbi2$Species))*length(unique(newbi2$Year)) # some combinations missing
+
+newbi2 <- setDT(newbi2)[CJ(Species=Species, Plot_bexis=Plot_bexis, 
+                         Year=Year, unique=T), 
+                      on=.(Species, Plot_bexis, Year)]
+#replace NAs by zeros except for SEW22 in 2012
+newbi2[is.na(value), value := ifelse((Plot_ID == "SEW22" & Year == 2012), NA, 0)] 
+
+
 
 #rename and arrange
 setnames(bird, names(bird), c("Species","Fun_group_fine","Plot_bexis","value")) #rename to match main table
@@ -599,16 +734,7 @@ bird <- data.table(BEplotZeros(bird,"Plot_bexis",plotnam = "Plot")) #add plotzer
 bird$type <- "abundance"; bird$DataID <- 25306; bird$Year <- 2018 #add metadata
 bird$Group_broad <- "bird"; bird$Group_fine <- "Bird"
 
-#Harmonise species names (keep the ones that are already in synthesis dataset)
-sort(setdiff(unique(bird$Species), unique(frs2[Group_broad=="bird"]$Species))) # 5 "new" species
-sort(setdiff(unique(frs2[Group_broad=="bird"]$Species), unique(bird$Species))) # 47 old species not present here
 
-# The 5 new species are synonyms: fix
-bird[Species=="Corvus_corone", Species:="Corvus_corone_corone"]
-bird[Species=="Corvus_cornix", Species:="Corvus_corone_cornix"]
-bird[Species=="Regulus_ignicapilla",Species:="Regulus_ignicapillus"]
-bird[Species=="Parus_ater",Species:="Periparus_ater"]
-bird[Species=="Parus_caeruleus",Species:="Cyanistes_caeruleus"]
 
 #harmonize Fun_group_fine
 unique(bird$Fun_group_fine)
@@ -680,7 +806,12 @@ rm(allbirdtr,birdtr,bird,newsp,birdc,allpl,checkbi,newbioldy,oldbi,yearver,newbi
 ####################################################################################
 
 
-#x. Update plant dataset 30909######################################################
+#10. Update plant dataset 30909######################################################
+
+#TODO: did I put hew2 and 51 everywhere for plants?
+
+
+
 # Remove old plant dataset and replace by new one: ID 30909
 plants <- fread("Exploratories/Data/FORESTS/Update2021/30909_5_data.txt")
 
@@ -754,11 +885,10 @@ plantagg <- merge(plantagg, newpl, by="Species")
 frs2 <- frs2[!Group_broad == "plant"]
 frs2 <- rbindlist(list(frs2, plantagg), use.names = T)
 rm(plantagg, plants, newpl, allcomb); gc()
-
 ####################################################################################
 
 
-#x. Add protists 2011 and 2017#####################################################
+#11. Add protists 2011 and 2017#####################################################
 
 ############CERCOZOA
 # Read diversity data and check dimension
@@ -987,7 +1117,7 @@ rm(prot, protoo, proinf); gc()
 ####################################################################################
 
 
-#x. Add moth dataset (26026) #######################################################
+#12. Add moth dataset (26026) #######################################################
 moth <- fread("Exploratories/Data/FORESTS/Update2021/26026_2_data.txt")
 summary(moth) #zeros are missing
 
@@ -1055,10 +1185,11 @@ sort(unique(moth$Plot)) #ok
 
 # Add to main dataset
 frs2 <- rbindlist(list(frs2, moth), use.names = T)
+rm(moth)
 ####################################################################################
 
 
-#x. Add nematodes dataset ##########################################################
+#13. Add nematodes dataset ##########################################################
 # This dataset is not in Bexis, the author is not available at the moment but agreed to
 # add it to the synthesis dataset. We will update the code once the dataset is in Bexis
 nem <- fread("Exploratories/Data/FORESTS/Update2021/nematodes.csv")
@@ -1083,7 +1214,7 @@ rm(nem, neminfo)
 ####################################################################################
 
 
-#x. Fix underscores in species names ###############################################
+#14. Fix underscores in species names ###############################################
 # Do some species have multiple underscores or underscores at the end?
 frs2[grep("__",frs2$Species),] #yes, replace with single underscores
 frs2$Species <- gsub("__","_",frs2$Species)
@@ -1095,7 +1226,7 @@ frs2$Species <- sub("_$","",frs2$Species)
 ####################################################################################
 
 
-#x. Change years for lichens and mosses ############################################
+#15. Change years for lichens and mosses ############################################
 # Both datasets have a mix of data collected in 2007 and 2008
 unique(frs2[DataID==4460]$Year) #lichens
 unique(frs2[DataID==4141]$Year) #mosses
@@ -1108,7 +1239,7 @@ frs2[is.na(Year)]
 ####################################################################################
 
 
-#x. Add NAs for missing plots in micromammals ######################################
+#16. Add NAs for missing plots in micromammals ######################################
 # Check number of plots
 sort(unique(frs2[Group_broad == "micromammal"]$Plot)) #126 plots
 mm <- frs2[Group_broad == "micromammal"] #subset
@@ -1136,12 +1267,97 @@ frs2 <- rbindlist(list(frs2, mm2), use.names = T)
 rm(mm, mm2); gc()
 ####################################################################################
 
+#17. Update bat datasets, add 2008 #################################################
+# There are 3 new datasets (19848, 19849, 19850) but it is not clear if the raw data was changed
+# 2008 is missing from forest dataset
 
+#any difference between old and new?
+old09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/TEXTfiles/bats/13146_Bats2009.txt")
+new09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
+#yes, there is one more sp in new dataset (Eptesiscus nilsonii)
+#species richness
+old09$rich <- rowSums(old09[,3:13]!=0)
+new09$rich <- rowSums(new09[,2:14]!=0)
+rich09 <- merge(old09[,.(EP_Plotid,rich)], new09[,.(EP_Plotid,rich)], by="EP_Plotid")
+plot(rich.x~rich.y, data=rich09)
+cor.test(rich09$rich.x, rich09$rich.y) #0.97
+rm(old09, rich09)
 
+old10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/TEXTfiles/bats/13526_Bats2010.txt")
+new10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
+#yes, there is one more sp in new dataset (Eptesiscus nilsonii)
+#species richness
+old10$rich <- rowSums(old10[,3:13]!=0)
+new10$rich <- rowSums(new10[,2:14]!=0)
+rich10 <- merge(old10[,.(EP_Plotid,rich)], new10[,.(EP_Plotid,rich)], by="EP_Plotid")
+plot(rich.x~rich.y, data=rich10)
+cor.test(rich10$rich.x, rich10$rich.y) #0.98
+rm(old10, rich10)
 
-#TODO: check if update in bats is needed
-#TODO add AMF?
-#TODO: did I put hew2 and 51 everywhere for plants?
+# merge datasets fom 2008, 2009 and 2010
+new08 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19848_2_data.txt")
+new09 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19849_2_data.txt")
+new10 <- fread("C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/Update2021/19850_2_data.txt")
+
+all.equal(names(new08), names(new09), names(new10)) #all equal, merge is straightforward
+
+# transform to long format and merge
+new08 <- melt.data.table(new08, variable.name = "Species")
+new09 <- melt.data.table(new09, variable.name = "Species")
+new10 <- melt.data.table(new10, variable.name = "Species")
+new08$Year <- 2008
+new09$Year <- 2009
+new10$Year <- 2010
+
+new08$DataID <- 19848
+new09$DataID <- 19849
+new10$DataID <- 19850
+
+newbats <- rbindlist(list(new08, new09, new10))
+
+#remove grassland plots
+newbats <- newbats[!grepl("G", newbats$EP_Plotid)]
+length(unique(newbats$Species))*150*3 # ok, all plots x species x year combinations are there
+
+# check if all species are in at least one plot (some could be in GRL only)
+newbats[, sumsp:=sum(value), by="Species"]
+unique(newbats$sumsp) #ok
+newbats$sumsp <- NULL
+
+#### add trophic info from old bat table
+oldbats <- frs2[Group_broad=="bat"] 
+oldbats <- unique(oldbats[, .(Species, Group_broad, Group_fine, Trophic_level,
+                              Fun_group_broad, Fun_group_fine)])
+#add info for two new species
+toadd <- data.table(Species=c("E_nil","N_low"), Group_broad="bat", Group_fine = "Bat",
+                    Trophic_level="tertiary.consumer.birdbat", Fun_group_broad="vert.predator",
+                    Fun_group_fine="insectivore")
+oldbats <- rbind(oldbats, toadd)
+
+unique(newbats$Species)
+oldbats$Species
+rm(toadd)
+
+#add new species names
+oldbats$Species <- NULL
+oldbats$Species <- c("B_bar", "M_myo", "M_nat", "M_spe", "N_hig", "N_lei",
+                        "N_noc", "P_nat", "P_pip", "P_pyg", "P_spe", "E_nil", "N_low")
+
+#merge with abundance data
+newbats <- merge(newbats, oldbats, by="Species")
+
+### add all columns to match the full dataset
+setdiff(names(frs2), names(newbats))
+setnames(newbats, "EP_Plotid", "Plot_bexis")
+newbats <- data.table(BEplotZeros(newbats, "Plot_bexis", plotnam = "Plot"))
+newbats$type <- "pass_number"
+
+# Remove old bat dataset and add new one
+frs2 <- frs2[!Group_broad == "bat"]
+frs2 <- rbindlist(list(frs2, newbats), use.names = T)
+rm(newbats, oldbats, new08, new09, new10); gc()
+####################################################################################
+
 
 
 #x. Example header #################################################################
@@ -1149,7 +1365,7 @@ rm(mm, mm2); gc()
 
 
 
-#x. Homogenise trophic group names #################################################
+#18. Homogenise trophic group names #################################################
 # This will match better with the grassland dataset
 trG <- fread("Exploratories/Data/GRASSLANDS/190218_EP_species_info_GRL.txt")
 unique(trG$Group_broad)
@@ -1165,7 +1381,7 @@ tr[Group_broad == "fungi.root.soil", Group_broad:= "SoilFungi.roots"]
 tr[Group_broad == "bacteria", Group_broad:= "Bacteria"]
 
 #TODO: same with other groups
-#TODO fungi deadwood they come from two datasets --> do something to differentiate?
+
 unique(frs2$Trophic_level)
 unique(frs2$Group_broad)
 
@@ -1178,14 +1394,28 @@ rm(trG)
 
 
 
-#x. Create a version column ##########################
+#19. Create a version column ##########################
 sort(as.numeric(unique(frs2$DataID)))
-# 4141  4460 10300 10301 13146 13526 15187 15188 15189 15190 16866 16867 16868 16869 16886
-# 16887 16906 17186 18547 20366 21047 24690 24868 25067 26569
+# version 2: 4141  4460 10300 10301 16866 16867 16868  16886 16887 16906 17186 18547
+#            19849 19850
+# version 3: 16869
+# version 4: 
 
-frs2$Dataversion<-NA
-frs2[DataID==4141, Dataversion:="1.6.8"]; frs2[DataID==4460, Dataversion:="1.11.14"]
-frs2[DataID==10300, Dataversion:="1.2.4"]; frs2[DataID==10301, Dataversion:="1.1.5"]
+# not in bexis, to check: 15187 15188 15189 15190 19848
+# 21687 24426 24466 24690 24868 24986 25067 25306 25766 25767 26026 26467
+# 26468 26469 26569 30909
+
+# to check birds IDs (in bexis but not new) 21446 21447 21448
+
+old dataset IDs: "15187" "15188" "15189" "15190" "24690"
+
+# in Bexis2 most dataversions are 2
+frs2$Dataversion <- 2
+frs2[DataID==4141, Dataversion:="2"]; frs2[DataID==4460, Dataversion:="2"]
+
+
+
+
 frs2[DataID==13146, Dataversion:="1.1.7"]; frs2[DataID==13526, Dataversion:="1.2.3"]
 frs2[DataID==15187, Dataversion:="2.1.3"]; frs2[DataID==15188, Dataversion:="2.1.2"]
 frs2[DataID==15189, Dataversion:="2.1.3"]; frs2[DataID==15190, Dataversion:="3.1.4"]
@@ -1214,7 +1444,7 @@ frs2[DataID==, Dataversion:=""]; frs2[DataID==, Dataversion:=""]
 #plants: 30909_5_Dataset version 5
 #moth: version 2
 #nematodes: NA
-
+#19849, 19849, 19850 - version2 
 
 ####################################################################################
 
@@ -1370,7 +1600,5 @@ ant<-ant[!Species %in% intersect(unique(ant$Species),unique(grl2$Species))]
 
 grl2<-rbind(grl2,ant)
 rm(ant); gc()
-
-
 ####################################################################################
 
