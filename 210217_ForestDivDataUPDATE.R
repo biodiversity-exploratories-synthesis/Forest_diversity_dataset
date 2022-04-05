@@ -1333,14 +1333,17 @@ dim(unique(tr3)) #some species are duplicated? --> no
 tr3 <- unique(tr3)
 #toRemove <- tr3[duplicated(tr3$Species)] 
 
+#any duplicates in species table?
+dup <- frs3[duplicated(frs3)]
+
 summary(factor(tr3$Trophic_level))
 
 #reorder column names in frs
 setcolorder(frs3,c("Plot_bexis","Plot","Species","value","type","Year","DataID","Dataversion"))
 
 #all good: save
-fwrite(frs3,"C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/220216_EP_species_diversity_forests_Bexis31206.txt",row.names=F,quote=F,sep=";",na=NA)
-fwrite(tr3,"C:/Users/Caterina/Dropbox/Exploratories/Data/FORESTS/220216_EP_species_info_forests_Bexis31207.txt",row.names=F,quote=F,sep=";",na=NA)
+fwrite(frs3,"Exploratories/Data/FORESTS/220216_EP_species_diversity_forests_Bexis31206.txt",row.names=F,quote=F,sep=";",na=NA)
+fwrite(tr3,"Exploratories/Data/FORESTS/220216_EP_species_info_forests_Bexis31207.txt",row.names=F,quote=F,sep=";",na=NA)
 
 #information to create metadata in Bexis
 sort(unique(as.numeric(frs3$DataID))) #to find data owners
