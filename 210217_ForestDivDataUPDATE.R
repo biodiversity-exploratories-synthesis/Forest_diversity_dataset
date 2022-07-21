@@ -1348,6 +1348,35 @@ fwrite(tr3,"Exploratories/Data/FORESTS/220216_EP_species_info_forests_Bexis31207
 #information to create metadata in Bexis
 sort(unique(as.numeric(frs3$DataID))) #to find data owners
 
+#Update 21.07.2022: round long numeric values to fit new Bexis format
+frs <- fread("Exploratories/Data/FORESTS/220216_EP_species_diversity_forests_Bexis31206.txt")
+tr <- fread("Exploratories/Data/FORESTS/220216_EP_species_info_forests_Bexis31207.txt")
+
+#check decimals
+class(frs$value)
+frs[value==222.166666666667]
+tr[Species=="Carychium"] #snail
+
+frs[value==36.8333333333333] #snail
+#ok, these are averages so they make sense, it's ok to round
+
+#round values
+frs[value==222.166666666667, value:=222.2]
+frs[value==36.8333333333333, value:=36.8]
+
+#any other long values?
+frs[,temp:=nchar(value)]
+summary(frs$temp) #ok max is 5
+hist(frs$temp) 
+frs$temp <- NULL
+
+#all good, save again
+fwrite(frs,"Exploratories/Data/FORESTS/220216_EP_species_diversity_forests_Bexis31206_patchDigits.txt",row.names=F,quote=F,sep=";",na=NA)
+
+
+
+
+
 # 20. Datasets not included and why ################################################
 # Soil macrofauna (ID: 22066) -> not added because order level and overlap with arthropods
 # --> add to metadata
