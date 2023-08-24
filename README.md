@@ -15,7 +15,7 @@ Please check our [manual](https://raw.githubusercontent.com/biodiversity-explora
 - 31207 Assembled species information from forest EPs (2007-2020) for multidiversity synthesis - January 2022
 
 **Scripts**
-  - 200220_UpdateGRLdataset.R -- Final script
+  - 210217_ForestDivDataUPDATE.R -- Final script
 
 --------------------------------------------------------------------------------------------------------------------------  
 **-->From single datasets**
